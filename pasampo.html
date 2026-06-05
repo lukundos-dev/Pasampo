@@ -1,0 +1,3387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pasampo – Sell Smart. Reach Far.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* ── Typography ────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8fafc; color: #0f172a;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Map ───────────────────────────────────────────── */
+    #main-map  { height: 520px; border-radius: 20px; z-index: 1; }
+    #sell-map  { height: 200px; border-radius: 14px; z-index: 1; }
+    #checkout-map { border-radius: 14px; }
+    .leaflet-container { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .leaflet-popup-content-wrapper { border-radius: 14px !important; box-shadow: 0 8px 30px rgba(0,0,0,.15) !important; }
+    .hub-row { transition: background .15s, border-color .15s; }
+
+    /* ── Page transitions ──────────────────────────────── */
+    .page { display: none; }
+    .page.active { display: block; animation: pageIn .35s cubic-bezier(.22,1,.36,1); }
+    @keyframes pageIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── Card hover ────────────────────────────────────── */
+    .card-hover { transition: transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s ease; }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.11), 0 4px 12px rgba(249,115,22,.08);
+    }
+
+    /* ── Category card special hover ──────────────────── */
+    .cat-card {
+      transition: transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s ease, border-color .2s;
+    }
+    .cat-card:hover {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 12px 32px rgba(249,115,22,.14);
+      border-color: rgba(249,115,22,.4) !important;
+    }
+    .cat-card:hover .cat-emoji { transform: scale(1.15); }
+    .cat-emoji { transition: transform .22s cubic-bezier(.22,1,.36,1); display: inline-block; }
+
+    /* ── Verified badge ────────────────────────────────── */
+    .badge-v {
+      background: linear-gradient(135deg,#dcfce7,#bbf7d0);
+      color: #15803d; font-size: 10.5px; padding: 2px 8px;
+      border-radius: 9999px; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 3px;
+      border: 1px solid #86efac;
+    }
+
+    /* ── Utilities ─────────────────────────────────────── */
+    .lc2 { display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
+    [data-nav] { cursor: pointer; }
+
+    /* ── Inputs ────────────────────────────────────────── */
+    input, select, textarea {
+      transition: border-color .18s, box-shadow .18s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #F97316 !important;
+      box-shadow: 0 0 0 3px rgba(249,115,22,.15);
+    }
+
+    /* ── Price bar ─────────────────────────────────────── */
+    .price-bar {
+      height: 8px;
+      background: linear-gradient(to right, #4ade80, #facc15, #F97316);
+      border-radius: 9999px; position: relative;
+    }
+    .price-dot {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px; background: #0F172A;
+      border-radius: 50%; border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,.35); margin-left: -9px;
+    }
+
+    /* ── Step indicators ───────────────────────────────── */
+    .step-done   { background: linear-gradient(135deg,#f97316,#ea580c); color: white; }
+    .step-active { background: linear-gradient(135deg,#f97316,#ea580c); color: white; box-shadow: 0 3px 10px rgba(249,115,22,.4); }
+    .step-inactive { background: #e5e7eb; color: #9ca3af; }
+
+    /* ── Hero tabs ─────────────────────────────────────── */
+    .tab-active  { background: #F97316; color: white; border-color: #F97316; box-shadow: 0 3px 10px rgba(249,115,22,.35); }
+    .tab-inactive { background: rgba(255,255,255,.75); color: #475569; border-color: #e2e8f0; }
+    .tab-inactive:hover { background: #fff7ed; color: #F97316; border-color: rgba(249,115,22,.35); }
+
+    /* ── Primary button ────────────────────────────────── */
+    .btn-primary {
+      background: linear-gradient(135deg, #F97316, #EA580C);
+      color: white; font-weight: 700;
+      box-shadow: 0 4px 14px rgba(249,115,22,.35);
+      transition: transform .18s, box-shadow .18s, filter .18s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(249,115,22,.45);
+      filter: brightness(1.05);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* ── Glass card ────────────────────────────────────── */
+    .glass { background: rgba(255,255,255,.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+
+    /* ── Product card image area ───────────────────────── */
+    .prod-img {
+      transition: transform .3s cubic-bezier(.22,1,.36,1);
+    }
+    .card-hover:hover .prod-img { transform: scale(1.06); }
+
+    /* ── Feature card ──────────────────────────────────── */
+    .feat-card {
+      transition: background .2s, border-color .2s, transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s;
+    }
+    .feat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 28px rgba(249,115,22,.1);
+      border-color: rgba(249,115,22,.35) !important;
+    }
+    .feat-icon { transition: transform .22s cubic-bezier(.22,1,.36,1); }
+    .feat-card:hover .feat-icon { transform: scale(1.12) rotate(-3deg); }
+
+    /* ── Testimonial card ──────────────────────────────── */
+    .testi-card {
+      transition: transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s ease;
+    }
+    .testi-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.18);
+    }
+
+    /* ── Scroll reveal ─────────────────────────────────── */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity .5s ease, transform .5s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Animated gradient orbs (hero) ────────────────── */
+    @keyframes orb1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(30px,-20px) scale(1.1)} }
+    @keyframes orb2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-20px,30px) scale(1.08)} }
+    .orb1 { animation: orb1 8s ease-in-out infinite; }
+    .orb2 { animation: orb2 10s ease-in-out infinite; }
+
+    /* ── Scrollbar ─────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #F97316; }
+
+    /* ── USSD terminal ─────────────────────────────────── */
+    @keyframes pulse-ring { 0%{transform:scale(.9);opacity:.7} 70%{transform:scale(1.15);opacity:0} 100%{opacity:0} }
+    .ussd-pulse { animation: pulse-ring 1.5s ease-out infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .spinner { animation: spin .9s linear infinite; display:inline-block; }
+
+    /* ── Toast ─────────────────────────────────────────── */
+    @keyframes toastIn  { from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+    /* ── Header scroll shadow ──────────────────────────── */
+    header { transition: box-shadow .2s; }
+    header.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,.1); }
+
+    /* ── Mobile menu ───────────────────────────────────── */
+    #mobile-menu { transition: max-height .3s ease, opacity .3s ease; }
+
+    /* ── Nav link active ───────────────────────────────── */
+    .nav-link { position: relative; }
+    .nav-link::after {
+      content:''; position:absolute; bottom:-2px; left:50%; right:50%;
+      height:2px; background:#F97316; border-radius:2px;
+      transition: left .2s, right .2s;
+    }
+    .nav-link:hover::after { left:8px; right:8px; }
+
+    /* ── Section divider ───────────────────────────────── */
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+    }
+
+    /* ── Premium compact UI pass ───────────────────────── */
+    .brand-logo {
+      width: 52px;
+      height: 52px;
+      object-fit: cover;
+      border-radius: 16px;
+      box-shadow: 0 8px 22px rgba(15,23,42,.16);
+      border: 1px solid rgba(15,23,42,.08);
+      background: #111827;
+    }
+    .brand-logo-sm {
+      width: 38px;
+      height: 38px;
+      object-fit: cover;
+      border-radius: 12px;
+      background: #111827;
+    }
+    .auth-provider-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #111827;
+      background: #fff;
+      transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+    .auth-provider-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(249,115,22,.5);
+      box-shadow: 0 10px 28px rgba(15,23,42,.08);
+      background: #fff7ed;
+    }
+    .nav-pill {
+      font-size: 14px;
+      color: #475569;
+      font-weight: 700;
+      padding: 10px 12px;
+      border-radius: 14px;
+      transition: color .18s ease, background .18s ease;
+    }
+    .nav-pill:hover { color: #F97316; background: #fff7ed; }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+<!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
+<header class="bg-white shadow-sm sticky top-0 z-50">
+  <div class="text-white text-xs py-1.5 px-4 text-center" style="background:#0F172A">
+    🛡️ All sellers NRC/Passport verified &nbsp;·&nbsp; 🏍️ Biker delivery across Lusaka &nbsp;·&nbsp;
+    💳 Airtel, MTN Money &amp; Stripe &nbsp;·&nbsp; <span class="text-[#F97316] font-semibold">$1 platform fee</span> per sale
+  </div>
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+    <!-- Logo -->
+    <div data-nav="home" class="flex items-center gap-2 shrink-0">
+      <img src="assets/pasampo-logo.png" alt="Pasampo" class="brand-logo" />
+      <div class="hidden sm:block leading-tight">
+        <div class="text-lg font-black text-[#0F172A] tracking-tight">Pasampo</div>
+        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Buy. Sell. Succeed.</div>
+      </div>
+    </div>
+    <!-- Location pill -->
+    <button class="hidden md:flex items-center gap-1.5 text-xs text-gray-600 border border-gray-200 rounded-full px-3 py-1.5 hover:border-[#F97316] hover:text-[#F97316] transition-colors shrink-0">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Lusaka
+    </button>
+    <!-- Nav links -->
+    <nav class="hidden md:flex items-center gap-1">
+      <div data-nav="browse" class="nav-pill">Browse</div>
+      <div data-nav="verify" class="nav-pill">Get Verified</div>
+    </nav>
+    <div class="flex-1"></div>
+    <!-- Right actions -->
+    <div class="flex items-center gap-2">
+      <div data-nav="sell" class="bg-[#F97316] hover:bg-[#EA6C0A] text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors shadow-sm cursor-pointer">
+        + Sell Now
+      </div>
+      <button class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F97316] rounded-full ring-1 ring-white"></span>
+      </button>
+      <!-- Auth button — switches between Sign Up and logged-in avatar -->
+      <div id="auth-btn-area">
+        <button onclick="openAuthModal('signup')" class="hidden md:flex items-center gap-1.5 text-sm font-semibold border-2 px-3 py-2 rounded-xl transition-colors hover:bg-orange-50" style="border-color:#F97316;color:#F97316">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Sign Up
+        </button>
+      </div>
+      <button onclick="toggleMenu()" class="md:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-700" id="menu-btn">
+        <svg id="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 px-4 py-3 space-y-1">
+    <div data-nav="browse" class="py-2.5 px-3 rounded-xl hover:bg-gray-50 text-sm font-medium text-gray-700">Browse All Listings</div>
+    <div data-nav="verify" class="py-2.5 px-3 rounded-xl hover:bg-gray-50 text-sm font-medium text-gray-700">🛡️ Get Verified</div>
+    <div data-nav="sell" class="bg-[#F97316] text-white font-bold text-center py-3 rounded-xl mt-1">+ Sell Now</div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
+<main class="flex-1">
+
+<!-- ──────────── PAGE: HOME ──────────── -->
+<div id="page-home" class="page active">
+
+  <!-- Hero -->
+  <section style="background:linear-gradient(135deg,#fff7ed 0%,#ffffff 42%,#ecfeff 100%);" class="relative overflow-hidden border-b border-orange-100/60">
+    <!-- Animated orbs -->
+    <div class="orb1 absolute -top-24 left-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none" style="background:radial-gradient(circle,rgba(249,115,22,.18),transparent 70%)"></div>
+    <div class="orb2 absolute -bottom-20 right-1/4 w-80 h-80 rounded-full blur-3xl pointer-events-none" style="background:radial-gradient(circle,rgba(34,197,94,.12),transparent 70%)"></div>
+    <!-- Subtle grid overlay -->
+    <div class="absolute inset-0 pointer-events-none" style="background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:60px 60px;"></div>
+    <div class="relative max-w-7xl mx-auto px-4 py-10 md:py-14 grid lg:grid-cols-12 gap-8 items-center">
+      <div class="lg:col-span-7">
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 border border-orange-200 rounded-full px-4 py-1.5 text-xs mb-5 bg-white/80 shadow-sm">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span class="text-gray-700">Zambia's verified marketplace · <span class="text-[#F97316] font-bold">12,400+ listings</span></span>
+      </div>
+      <!-- Headline -->
+      <h1 class="text-4xl md:text-6xl font-black leading-tight mb-4 tracking-tight text-gray-950">
+        Find Anything. <span class="text-[#F97316]">Sell Everything.</span>
+      </h1>
+      <p class="text-gray-500 text-lg mb-7 max-w-xl">
+        Phones, cars, shoes, electronics &amp; more — all from verified Zambian sellers.
+      </p>
+      <!-- Category tabs -->
+      <div class="flex flex-wrap gap-2 mb-4" id="hero-tabs">
+        <button onclick="heroTab('all')" class="tab-active px-4 py-1.5 rounded-full text-sm font-medium border transition-colors" data-cat="all">All</button>
+        <button onclick="heroTab('phones')" class="tab-inactive px-4 py-1.5 rounded-full text-sm font-medium border transition-colors" data-cat="phones">📱 Phones</button>
+        <button onclick="heroTab('cars')" class="tab-inactive px-4 py-1.5 rounded-full text-sm font-medium border transition-colors" data-cat="cars">🚗 Cars</button>
+        <button onclick="heroTab('electronics')" class="tab-inactive px-4 py-1.5 rounded-full text-sm font-medium border transition-colors" data-cat="electronics">💻 Electronics</button>
+        <button onclick="heroTab('shoes')" class="tab-inactive px-4 py-1.5 rounded-full text-sm font-medium border transition-colors" data-cat="shoes">👟 Shoes</button>
+        <button onclick="heroTab('home')" class="tab-inactive px-4 py-1.5 rounded-full text-sm font-medium border transition-colors" data-cat="home">🏠 Home</button>
+      </div>
+      <!-- Search bar -->
+      <div class="flex items-center bg-white rounded-3xl overflow-hidden shadow-2xl max-w-2xl mb-4 border border-orange-100">
+        <div class="flex items-center gap-1.5 px-4 py-3 border-r border-gray-200 text-gray-500 text-sm shrink-0">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Lusaka
+        </div>
+        <input id="hero-search" type="text" placeholder="Search phones, cars, shoes, laptops…" class="flex-1 px-4 py-3 text-gray-800 text-sm bg-transparent placeholder-gray-400" style="outline:none;border:none;" />
+        <button onclick="doHeroSearch()" class="flex items-center gap-2 text-white font-bold px-6 py-3 text-sm transition-colors shrink-0" style="background:#d97706">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search
+        </button>
+      </div>
+      <!-- Subtext -->
+      <div class="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+        <span><strong class="text-gray-950">12,400+</strong> listings</span>
+        <span>·</span>
+        <span><strong class="text-gray-950">3,200+</strong> verified sellers</span>
+        <span>·</span>
+        <span><strong class="text-gray-950">8,900+</strong> sales this month</span>
+      </div>
+      </div>
+      <div class="hidden lg:block lg:col-span-5">
+        <div class="bg-white/85 backdrop-blur rounded-[28px] p-5 border border-white shadow-2xl">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <p class="text-xs font-bold text-[#F97316] uppercase tracking-wider">Live in Lusaka</p>
+              <h3 class="text-lg font-black text-gray-950">Trending Deals</h3>
+            </div>
+            <span class="text-xs font-bold bg-green-100 text-green-700 px-3 py-1 rounded-full">Verified only</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-3xl p-4 bg-blue-50 min-h-[160px] flex flex-col justify-between">
+              <span class="text-5xl self-center">📱</span>
+              <div><p class="font-black text-sm">Galaxy A54</p><p class="text-xs text-gray-500">K 2,800 · Woodlands</p></div>
+            </div>
+            <div class="rounded-3xl p-4 bg-slate-100 min-h-[160px] flex flex-col justify-between">
+              <span class="text-5xl self-center">🚗</span>
+              <div><p class="font-black text-sm">Toyota Vitz</p><p class="text-xs text-gray-500">K 89,000 · Chilenje</p></div>
+            </div>
+            <div class="rounded-3xl p-4 bg-purple-50 min-h-[130px] flex flex-col justify-between">
+              <span class="text-4xl self-center">🎮</span>
+              <div><p class="font-black text-sm">PS5 Bundle</p><p class="text-xs text-gray-500">K 6,500</p></div>
+            </div>
+            <div class="rounded-3xl p-4 text-white min-h-[130px] flex flex-col justify-between" style="background:linear-gradient(135deg,#0F172A,#166534)">
+              <p class="text-xs text-white/70">Seller plan</p>
+              <div><p class="text-2xl font-black">K500</p><p class="text-xs text-white/70">30 active listings</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust bar -->
+  <section class="bg-white border-b border-gray-100">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap justify-center gap-x-8 gap-y-2">
+      <div class="flex items-center gap-1.5 text-xs text-gray-600">🪪 NRC &amp; Passport Verified Sellers</div>
+      <div class="flex items-center gap-1.5 text-xs text-gray-600">🏍️ Biker Delivery — 2–4 hrs Lusaka</div>
+      <div class="flex items-center gap-1.5 text-xs text-gray-600">📱 Airtel, MTN Money &amp; Stripe Card</div>
+      <div class="flex items-center gap-1.5 text-xs text-gray-600">🛡️ $1 Platform Fee — Buyer Protected</div>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section class="max-w-7xl mx-auto px-4 py-10">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-xl font-bold text-gray-900">Browse by Category</h2>
+      <div data-nav="browse" class="text-sm text-[#F97316] hover:underline flex items-center gap-1 cursor-pointer">All categories ›</div>
+    </div>
+    <div class="grid grid-cols-4 md:grid-cols-8 gap-3">
+        <div data-nav="browse" data-cat="phones" class="cat-card rounded-2xl p-4 text-center border border-transparent flex flex-col items-center gap-2 cursor-pointer" style="background:linear-gradient(135deg,#eff6ff,#dbeafe)">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(59,130,246,.12)"><span class="cat-emoji text-3xl">📱</span></div>
+          <span class="text-xs font-semibold text-gray-800 leading-tight">Phones &amp; Tablets</span>
+          <span class="text-[10px] font-semibold text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">1,240</span>
+        </div>
+        <div data-nav="browse" data-cat="cars" class="cat-card rounded-2xl p-4 text-center border border-transparent flex flex-col items-center gap-2 cursor-pointer" style="background:linear-gradient(135deg,#f8fafc,#e2e8f0)">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(100,116,139,.12)"><span class="cat-emoji text-3xl">🚗</span></div>
+          <span class="text-xs font-semibold text-gray-800 leading-tight">Cars &amp; Vehicles</span>
+          <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">890</span>
+        </div>
+        <div data-nav="browse" data-cat="electronics" class="cat-card rounded-2xl p-4 text-center border border-transparent flex flex-col items-center gap-2 cursor-pointer" style="background:linear-gradient(135deg,#faf5ff,#ede9fe)">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(139,92,246,.12)"><span class="cat-emoji text-3xl">💻</span></div>
+          <span class="text-xs font-semibold text-gray-800 leading-tight">Electronics</span>
+          <span class="text-[10px] font-semibold text-purple-500 bg-purple-100 px-2 py-0.5 rounded-full">2,100</span>
+        </div>
+        <div data-nav="browse" data-cat="shoes" class="cat-card rounded-2xl p-4 text-center border border-transparent flex flex-col items-center gap-2 cursor-pointer" style="background:linear-gradient(135deg,#fdf2f8,#fce7f3)">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(236,72,153,.12)"><span class="cat-emoji text-3xl">👟</span></div>
+          <span class="text-xs font-semibold text-gray-800 leading-tight">Shoes &amp; Fashion</span>
+          <span class="text-[10px] font-semibold text-pink-500 bg-pink-100 px-2 py-0.5 rounded-full">3,400</span>
+        </div>
+        <div data-nav="browse" data-cat="home" class="cat-card rounded-2xl p-4 text-center border border-transparent flex flex-col items-center gap-2 cursor-pointer" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(34,197,94,.12)"><span class="cat-emoji text-3xl">🏠</span></div>
+          <span class="text-xs font-semibold text-gray-800 leading-tight">Home &amp; Garden</span>
+          <span class="text-[10px] font-semibold text-green-500 bg-green-100 px-2 py-0.5 rounded-full">780</span>
+        </div>
+        <div data-nav="browse" data-cat="appliances" class="cat-card rounded-2xl p-4 text-center border border-transparent flex flex-col items-center gap-2 cursor-pointer" style="background:linear-gradient(135deg,#fefce8,#fef9c3)">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(234,179,8,.12)"><span class="cat-emoji text-3xl">🏪</span></div>
+          <span class="text-xs font-semibold text-gray-800 leading-tight">Appliances</span>
+          <span class="text-[10px] font-semibold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full">560</span>
+        </div>
+        <div data-nav="browse" data-cat="sports" class="cat-card rounded-2xl p-4 text-center border border-transparent flex flex-col items-center gap-2 cursor-pointer" style="background:linear-gradient(135deg,#fff7ed,#ffedd5)">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(249,115,22,.12)"><span class="cat-emoji text-3xl">⚽</span></div>
+          <span class="text-xs font-semibold text-gray-800 leading-tight">Sports &amp; Fitness</span>
+          <span class="text-[10px] font-semibold text-orange-500 bg-orange-100 px-2 py-0.5 rounded-full">430</span>
+        </div>
+        <div data-nav="browse" data-cat="kids" class="cat-card rounded-2xl p-4 text-center border border-transparent flex flex-col items-center gap-2 cursor-pointer" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff)">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(192,132,252,.12)"><span class="cat-emoji text-3xl">🧸</span></div>
+          <span class="text-xs font-semibold text-gray-800 leading-tight">Kids &amp; Baby</span>
+          <span class="text-[10px] font-semibold text-purple-400 bg-purple-50 px-2 py-0.5 rounded-full">310</span>
+        </div>
+    </div>
+  </section>
+
+  <!-- What Pasampo Offers -->
+  <section class="bg-white py-12 px-4 border-y border-gray-100">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">What Pasampo Offers</h2>
+        <p class="text-gray-500 text-sm">Everything you need to buy and sell with confidence in Zambia</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="bg-gray-50 hover:bg-orange-50 border border-gray-100 hover:border-orange-200 rounded-2xl p-5 text-center transition-colors group">
+          <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <h3 class="font-bold text-sm text-gray-900 mb-1">Smart Search</h3>
+          <p class="text-xs text-gray-500">Filter by category, price &amp; location across Zambia.</p>
+        </div>
+        <div class="bg-gray-50 hover:bg-orange-50 border border-gray-100 hover:border-orange-200 rounded-2xl p-5 text-center transition-colors group">
+          <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          </div>
+          <h3 class="font-bold text-sm text-gray-900 mb-1">Live Market Pricing</h3>
+          <p class="text-xs text-gray-500">See what similar items are actually selling for.</p>
+        </div>
+        <div class="bg-gray-50 hover:bg-orange-50 border border-gray-100 hover:border-orange-200 rounded-2xl p-5 text-center transition-colors group">
+          <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3 class="font-bold text-sm text-gray-900 mb-1">NRC Verified</h3>
+          <p class="text-xs text-gray-500">Every seller passes a one-time identity check.</p>
+        </div>
+        <div class="bg-gray-50 hover:bg-orange-50 border border-gray-100 hover:border-orange-200 rounded-2xl p-5 text-center transition-colors group">
+          <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
+          <h3 class="font-bold text-sm text-gray-900 mb-1">Biker Delivery</h3>
+          <p class="text-xs text-gray-500">Tracked delivery across Lusaka in 2–4 hours.</p>
+        </div>
+        <div class="bg-gray-50 hover:bg-orange-50 border border-gray-100 hover:border-orange-200 rounded-2xl p-5 text-center transition-colors group">
+          <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <h3 class="font-bold text-sm text-gray-900 mb-1">Your Mini Store</h3>
+          <p class="text-xs text-gray-500">List up to 5 items free, or 30 active items with Premium.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Latest Listings -->
+  <section class="max-w-7xl mx-auto px-4 py-10">
+    <div class="flex items-center justify-between mb-5">
+      <div><h2 class="text-xl font-bold text-gray-900">Latest Listings</h2><p class="text-xs text-gray-400 mt-0.5">Verified sellers only · Updated in real-time</p></div>
+      <div data-nav="browse" class="text-sm text-[#F97316] hover:underline cursor-pointer">See all ›</div>
+    </div>
+    <div id="home-latest" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+  </section>
+
+  <!-- Trending -->
+  <section class="max-w-7xl mx-auto px-4 pb-10">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-xl font-bold text-gray-900">🔥 Trending Now</h2>
+      <div data-nav="browse" class="text-sm text-[#F97316] hover:underline cursor-pointer">View all ›</div>
+    </div>
+    <div id="home-trending" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+  </section>
+
+  <!-- Seller testimonials -->
+  <section class="py-14 px-4" style="background:#0F172A">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center gap-2 border border-white/15 rounded-full px-4 py-1.5 text-xs text-white/70 mb-4" style="background:rgba(255,255,255,.08)">
+          ⭐ 4.9/5 average seller rating
+        </div>
+        <h2 class="text-2xl font-bold text-white mb-2">Loved by Zambian Sellers</h2>
+        <p class="text-gray-400 text-sm">Real people. Real sales. Real earnings — from Lusaka to Kitwe.</p>
+      </div>
+      <div class="grid md:grid-cols-3 gap-5 mb-8">
+        <!-- Testimonial 1 -->
+        <div class="bg-white rounded-2xl p-6 flex flex-col gap-3 card-hover">
+          <div class="flex gap-0.5">⭐⭐⭐⭐⭐</div>
+          <p class="text-gray-700 text-sm leading-relaxed flex-1">"Before Pasampo I was posting on Facebook groups and getting lowballed every day. Now I have a proper store, buyers trust the verified badge, and I've tripled my monthly income."</p>
+          <div class="bg-green-50 border border-green-100 rounded-xl px-3 py-2 inline-flex items-center gap-2">
+            <span class="text-green-600 font-bold text-sm">K 8,400</span>
+            <span class="text-green-500 text-xs">earned last month</span>
+          </div>
+          <div class="flex items-center gap-3 pt-2 border-t border-gray-50">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0" style="background:rgba(249,115,22,.1)">📱</div>
+            <div><div class="font-semibold text-sm text-gray-900">Chanda Mwale</div><div class="text-xs text-gray-500">Phone reseller · Lusaka, Woodlands</div></div>
+            <div class="ml-auto text-right"><div class="text-xs font-bold text-[#F97316]">127 sold</div><div class="text-[10px] text-gray-400">total sales</div></div>
+          </div>
+        </div>
+        <!-- Testimonial 2 -->
+        <div class="bg-white rounded-2xl p-6 flex flex-col gap-3 card-hover">
+          <div class="flex gap-0.5">⭐⭐⭐⭐⭐</div>
+          <p class="text-gray-700 text-sm leading-relaxed flex-1">"The market price feature is a game changer. I used to guess what to charge — now I can see exactly where my price sits compared to others. Sold out my stock in 3 days."</p>
+          <div class="bg-green-50 border border-green-100 rounded-xl px-3 py-2 inline-flex items-center gap-2">
+            <span class="text-green-600 font-bold text-sm">K 5,200</span>
+            <span class="text-green-500 text-xs">earned last month</span>
+          </div>
+          <div class="flex items-center gap-3 pt-2 border-t border-gray-50">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0" style="background:rgba(249,115,22,.1)">👟</div>
+            <div><div class="font-semibold text-sm text-gray-900">Mutale Banda</div><div class="text-xs text-gray-500">Sneaker trader · Lusaka, Kabulonga</div></div>
+            <div class="ml-auto text-right"><div class="text-xs font-bold text-[#F97316]">89 sold</div><div class="text-[10px] text-gray-400">total sales</div></div>
+          </div>
+        </div>
+        <!-- Testimonial 3 -->
+        <div class="bg-white rounded-2xl p-6 flex flex-col gap-3 card-hover">
+          <div class="flex gap-0.5">⭐⭐⭐⭐⭐</div>
+          <p class="text-gray-700 text-sm leading-relaxed flex-1">"The biker delivery removed my biggest headache. Buyers used to cancel when they heard they had to come pick up. Now I just hand it to the biker and it's done in hours."</p>
+          <div class="bg-green-50 border border-green-100 rounded-xl px-3 py-2 inline-flex items-center gap-2">
+            <span class="text-green-600 font-bold text-sm">K 12,600</span>
+            <span class="text-green-500 text-xs">earned last month</span>
+          </div>
+          <div class="flex items-center gap-3 pt-2 border-t border-gray-50">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0" style="background:rgba(249,115,22,.1)">💻</div>
+            <div><div class="font-semibold text-sm text-gray-900">Namukolo Phiri</div><div class="text-xs text-gray-500">Electronics dealer · Chelston</div></div>
+            <div class="ml-auto text-right"><div class="text-xs font-bold text-[#F97316]">204 sold</div><div class="text-[10px] text-gray-400">total sales</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="text-center">
+        <div data-nav="sell" class="inline-flex items-center gap-2 text-white font-bold px-8 py-4 rounded-2xl transition-colors cursor-pointer" style="background:#F97316">
+          Start Your Store Free →
+        </div>
+        <p class="text-gray-500 text-xs mt-3">No credit card required · Live in minutes · Designed in Zambia 🇿🇲</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="bg-white py-12 px-4">
+    <div class="max-w-5xl mx-auto text-center">
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">How Pasampo Works</h2>
+      <p class="text-gray-500 mb-8 text-sm">From listing to cash in hand — three steps</p>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="bg-gray-50 rounded-2xl p-7 text-left relative overflow-hidden border border-gray-100">
+          <span class="absolute top-4 right-5 text-6xl font-black text-gray-100 select-none">01</span>
+          <div class="text-4xl mb-3">🪪</div>
+          <h3 class="font-bold text-gray-900 mb-2">Verify Once</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">Upload your NRC or passport once. Verified within 24 hours — your listings earn a trusted badge. Documents stored encrypted, never shown to buyers.</p>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-7 text-left relative overflow-hidden border border-gray-100">
+          <span class="absolute top-4 right-5 text-6xl font-black text-gray-100 select-none">02</span>
+          <div class="text-4xl mb-3">🏪</div>
+          <h3 class="font-bold text-gray-900 mb-2">Open Your Store</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">Create a personalised store in minutes. List up to 5 items free, or 30 active items on Premium. See live market prices as you list so you always price competitively.</p>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-7 text-left relative overflow-hidden border border-gray-100">
+          <span class="absolute top-4 right-5 text-6xl font-black text-gray-100 select-none">03</span>
+          <div class="text-4xl mb-3">💰</div>
+          <h3 class="font-bold text-gray-900 mb-2">Sell &amp; Get Paid</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">Buyer pays securely. Flat $1 platform fee per sale. Choose: arrange delivery yourself or hand it to our biker network for 2–4 hr delivery.</p>
+        </div>
+      </div>
+      <div data-nav="sell" class="inline-flex items-center gap-2 text-white font-bold px-8 py-4 rounded-2xl mt-8 cursor-pointer" style="background:#F97316">Start Selling Free →</div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="max-w-4xl mx-auto px-4 py-12">
+    <h2 class="text-2xl font-bold text-center text-gray-900 mb-2">Simple, Honest Pricing</h2>
+    <p class="text-center text-gray-500 mb-8 text-sm">Start free — upgrade only when you're ready</p>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="bg-white border-2 border-gray-200 rounded-2xl p-7">
+        <div class="text-lg font-bold mb-1">Free Store</div>
+        <div class="text-4xl font-black text-gray-900 mb-1">K0 <span class="text-base font-normal text-gray-400">/ month</span></div>
+        <p class="text-sm text-gray-500 mb-5">Perfect for individuals getting started</p>
+        <ul class="space-y-2 text-sm mb-5">
+          <li class="flex items-center gap-2 text-gray-700"><span class="text-green-500 font-bold">✓</span> Up to 5 active listings</li>
+          <li class="flex items-center gap-2 text-gray-700"><span class="text-green-500 font-bold">✓</span> Verified seller badge</li>
+          <li class="flex items-center gap-2 text-gray-700"><span class="text-green-500 font-bold">✓</span> Personalised store page</li>
+          <li class="flex items-center gap-2 text-gray-700"><span class="text-green-500 font-bold">✓</span> $1 flat fee per transaction</li>
+          <li class="flex items-center gap-2 text-gray-700"><span class="text-green-500 font-bold">✓</span> Buyer messaging</li>
+          <li class="flex items-center gap-2 text-gray-700"><span class="text-green-500 font-bold">✓</span> Market price insight</li>
+        </ul>
+        <div data-nav="sell" class="block text-center border-2 border-[#F97316] text-[#F97316] font-bold py-3 rounded-xl hover:bg-orange-50 cursor-pointer transition-colors">Get Started Free</div>
+      </div>
+      <div class="rounded-2xl p-7 relative overflow-hidden text-white" style="background:#0F172A">
+        <div class="absolute top-5 right-5 text-white text-xs font-bold px-3 py-1 rounded-full" style="background:#F97316">MOST POPULAR</div>
+        <div class="text-lg font-bold mb-1">Premium Store</div>
+        <div class="text-4xl font-black mb-1">K500 <span class="text-base font-normal text-gray-400">/ month</span></div>
+        <p class="text-sm text-gray-400 mb-5">For serious sellers &amp; small businesses</p>
+        <ul class="space-y-2 text-sm mb-5">
+          <li class="flex items-center gap-2 text-gray-300"><span class="font-bold" style="color:#F97316">✓</span> Up to 30 active listings</li>
+          <li class="flex items-center gap-2 text-gray-300"><span class="font-bold" style="color:#F97316">✓</span> Priority listing placement</li>
+          <li class="flex items-center gap-2 text-gray-300"><span class="font-bold" style="color:#F97316">✓</span> Sales analytics dashboard</li>
+          <li class="flex items-center gap-2 text-gray-300"><span class="font-bold" style="color:#F97316">✓</span> Discounted biker delivery — K60</li>
+          <li class="flex items-center gap-2 text-gray-300"><span class="font-bold" style="color:#F97316">✓</span> Bulk upload tools</li>
+          <li class="flex items-center gap-2 text-gray-300"><span class="font-bold" style="color:#F97316">✓</span> Dedicated seller support</li>
+        </ul>
+        <button class="block w-full text-center text-white font-bold py-3 rounded-xl transition-colors" style="background:#F97316">Upgrade to Premium</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Biker CTA -->
+  <section class="py-12 px-4 text-white" style="background:#F97316">
+    <div class="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-8">
+      <div class="text-center md:text-left flex-1">
+        <div class="text-5xl mb-3">🏍️</div>
+        <h2 class="text-2xl font-bold mb-3">Powered by Our Biker Network</h2>
+        <p class="text-sm leading-relaxed mb-5" style="color:rgba(255,255,255,.85)">Verified local bikers handle delivery across Lusaka in 2–4 hours. Bikers earn 15% of the delivery fee. Buyers pay K80. No logistics headache.</p>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div data-nav="sell" class="bg-white font-bold px-6 py-3 rounded-xl text-center cursor-pointer" style="color:#F97316">List an Item</div>
+          <button class="border-2 border-white text-white font-bold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors">Register as a Biker</button>
+        </div>
+      </div>
+      <div class="border border-white/20 rounded-2xl p-6 min-w-52 text-center" style="background:rgba(255,255,255,.15)">
+        <div class="py-2 border-b border-white/15"><div class="font-black text-lg">2–4 hrs</div><div class="text-xs" style="color:rgba(255,255,255,.7)">Avg delivery time</div></div>
+        <div class="py-2 border-b border-white/15"><div class="font-black text-lg">15%</div><div class="text-xs" style="color:rgba(255,255,255,.7)">Biker earning share</div></div>
+        <div class="py-2 border-b border-white/15"><div class="font-black text-lg">K80</div><div class="text-xs" style="color:rgba(255,255,255,.7)">Flat delivery fee</div></div>
+        <div class="py-2"><div class="font-black text-lg">Lusaka-wide</div><div class="text-xs" style="color:rgba(255,255,255,.7)">Coverage area</div></div>
+      </div>
+    </div>
+  </section>
+</div><!-- /page-home -->
+
+<!-- ──────────── PAGE: BROWSE ──────────── -->
+<div id="page-browse" class="page">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-5">Browse Listings</h1>
+    <!-- Search + sort -->
+    <div class="flex flex-col sm:flex-row gap-3 mb-5">
+      <div class="relative flex-1">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="browse-search" type="text" placeholder="Search listings…" oninput="renderBrowseGrid()" class="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm" />
+      </div>
+      <select id="browse-sort" onchange="renderBrowseGrid()" class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+        <option value="newest">Newest First</option>
+        <option value="price-asc">Price: Low to High</option>
+        <option value="price-desc">Price: High to Low</option>
+        <option value="views">Most Viewed</option>
+      </select>
+    </div>
+    <div class="flex gap-6">
+      <!-- Sidebar -->
+      <aside class="hidden md:block w-44 shrink-0">
+        <div class="bg-white rounded-2xl border border-gray-100 p-3">
+          <p class="text-xs font-semibold text-gray-400 uppercase mb-2 px-2">Categories</p>
+          <div id="browse-cats" class="space-y-0.5"></div>
+        </div>
+      </aside>
+      <!-- Grid -->
+      <div class="flex-1">
+        <p id="browse-count" class="text-sm text-gray-500 mb-4"></p>
+        <div id="browse-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────── PAGE: PRODUCT ──────────── -->
+<div id="page-product" class="page">
+  <div id="product-content" class="max-w-6xl mx-auto px-4 py-8"></div>
+</div>
+
+<!-- ──────────── PAGE: SELL ──────────── -->
+<div id="page-sell" class="page">
+  <div class="max-w-2xl mx-auto px-4 py-10">
+    <div id="sell-quota-header"></div>
+    <!-- Steps indicator -->
+    <div class="flex items-center gap-2 mb-8" id="sell-steps"></div>
+    <!-- Form content -->
+    <div id="sell-form"></div>
+  </div>
+</div>
+
+<!-- ──────────── PAGE: VERIFY ──────────── -->
+<div id="page-verify" class="page">
+  <div class="max-w-xl mx-auto px-4 py-10">
+    <div class="text-center mb-7">
+      <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3" style="background:rgba(249,115,22,.1)">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900 mb-1">Verify Your Identity</h1>
+      <p class="text-gray-500 text-sm max-w-sm mx-auto">Create your profile first, then submit NRC or Passport documents for review. Verification usually takes <strong>1 hour</strong> and can take up to <strong>24 hours</strong>. You can still browse, message, and buy while waiting.</p>
+    </div>
+    <!-- Why verify -->
+    <div class="text-white rounded-2xl p-4 mb-7 grid grid-cols-3 gap-3 text-center text-xs" style="background:#0F172A">
+      <div><div class="text-xl mb-1">🛡️</div><div class="text-gray-300">Builds trust with buyers</div></div>
+      <div><div class="text-xl mb-1">📈</div><div class="text-gray-300">3× more likely to sell</div></div>
+      <div><div class="text-xl mb-1">⏱️</div><div class="text-gray-300">1-24 hr review window</div></div>
+    </div>
+    <!-- Steps indicator -->
+    <div class="flex items-center gap-2 mb-7" id="kyc-steps"></div>
+    <!-- Form -->
+    <div id="kyc-form"></div>
+  </div>
+</div>
+
+<!-- ──────────── PAGE: STORE ──────────── -->
+<div id="page-store" class="page">
+  <div id="store-content" class="max-w-6xl mx-auto px-4 py-8"></div>
+</div>
+
+<!-- ──────────── PAGE: INBOX ──────────── -->
+<div id="page-inbox" class="page">
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-5">
+      <h1 class="text-xl font-bold text-gray-900">💬 Messages</h1>
+      <span class="text-sm text-gray-500" id="inbox-count"></span>
+    </div>
+    <div class="grid md:grid-cols-5 gap-4" style="min-height:500px">
+      <!-- Conversation list -->
+      <div class="md:col-span-2 space-y-2" id="convo-list"></div>
+      <!-- Chat panel -->
+      <div class="md:col-span-3 bg-white rounded-2xl border border-gray-100 flex flex-col" id="chat-panel">
+        <div class="flex-1 flex items-center justify-center text-gray-400 text-sm py-20">
+          Select a conversation to start chatting
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────── PAGE: MAP ──────────── -->
+<div id="page-map" class="page">
+  <div class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+      <div>
+        <h1 class="text-xl font-bold text-gray-900">🗺️ Lusaka Trading Map</h1>
+        <p class="text-sm text-gray-500 mt-0.5">11 active neighbourhoods · Click any hub to explore listings · Biker delivery zone shown</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="map-toggle-btn" onclick="toggleMapView()" class="text-sm font-semibold px-4 py-2 rounded-xl border-2 border-gray-200 hover:border-[#F97316] transition-colors bg-white">
+          🛰️ Satellite View
+        </button>
+        <div data-nav="browse" class="text-sm font-semibold px-4 py-2 rounded-xl text-white cursor-pointer" style="background:#F97316">Browse All →</div>
+      </div>
+    </div>
+
+    <!-- Map + Sidebar -->
+    <div class="grid md:grid-cols-3 gap-4 mb-4">
+
+      <!-- Map -->
+      <div class="md:col-span-2 relative">
+        <div id="main-map"></div>
+        <!-- Legend -->
+        <div class="absolute bottom-3 left-3 bg-white rounded-xl px-3 py-2 shadow text-xs z-10 flex items-center gap-3">
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full" style="background:#F97316;opacity:.4;border:2px dashed #F97316"></span> Biker zone</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full" style="background:#22c55e"></span> Hub</span>
+        </div>
+      </div>
+
+      <!-- Hub sidebar -->
+      <div style="max-height:520px;overflow-y:auto;" class="space-y-1.5">
+        <div class="rounded-xl p-3 mb-1 text-sm" style="background:#fff7ed;border:1px solid #fed7aa">
+          <div class="font-semibold" style="color:#F97316">🏍️ Biker Coverage Zone</div>
+          <p class="text-xs text-gray-500 mt-0.5">~8 km radius from CBD. All hubs below are within delivery range.</p>
+        </div>
+        <div id="map-hubs" class="space-y-1.5"></div>
+      </div>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="grid grid-cols-3 gap-4">
+      <div class="bg-white rounded-2xl p-4 border border-gray-100 text-center">
+        <div class="text-2xl font-black" style="color:#F97316">11</div>
+        <div class="text-xs text-gray-500">Trading Hubs</div>
+      </div>
+      <div class="bg-white rounded-2xl p-4 border border-gray-100 text-center">
+        <div class="text-2xl font-black" style="color:#F97316">12,400+</div>
+        <div class="text-xs text-gray-500">Active Listings</div>
+      </div>
+      <div class="bg-white rounded-2xl p-4 border border-gray-100 text-center">
+        <div class="text-2xl font-black" style="color:#F97316">~8 km</div>
+        <div class="text-xs text-gray-500">Biker Radius</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main><!-- /main -->
+
+<!-- ═══ MODAL: STORE EDITOR ═══ -->
+<div id="store-edit-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);overflow-y:auto;" onclick="if(event.target===this)closeStoreEditor()">
+  <div class="min-h-full flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-bold text-gray-900">✏️ Edit Your Store</h2>
+        <button onclick="closeStoreEditor()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 text-xl">×</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Store Name</label>
+          <input id="se-name" type="text" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Catchphrase / Tagline <span class="text-gray-400 font-normal">(shown on your store page)</span></label>
+          <input id="se-catchphrase" type="text" maxlength="80" placeholder="e.g. Zambia's best tech deals 🔥" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm" />
+          <p class="text-xs text-gray-400 mt-1">Max 80 characters</p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Store Bio</label>
+          <textarea id="se-bio" rows="3" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm resize-none"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Brand Colour</label>
+          <div class="flex gap-2 flex-wrap">
+            ${['#F97316','#3b82f6','#22c55e','#a855f7','#ef4444','#0f172a'].map((c,i) =>
+              `<label class="cursor-pointer"><input type="radio" name="se-color" value="${c}" class="sr-only" ${i===0?'checked':''}/><div class="w-8 h-8 rounded-full ring-offset-2 transition-all" style="background:${c}" title="${c}"></div></label>`
+            ).join('')}
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeStoreEditor()" class="flex-1 border-2 border-gray-200 text-gray-700 font-bold py-3 rounded-xl">Cancel</button>
+          <button onclick="saveStoreEdits()" class="flex-1 text-white font-bold py-3 rounded-xl" style="background:#F97316">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: ADD REVIEW ═══ -->
+<div id="review-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);overflow-y:auto;" onclick="if(event.target===this)closeReviewModal()">
+  <div class="min-h-full flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-bold text-gray-900">Write a Review</h2>
+        <button onclick="closeReviewModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 text-xl">×</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Your Name</label>
+          <input id="rv-name" type="text" placeholder="e.g. Chanda M." class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Rating</label>
+          <select id="rv-rating" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+            <option value="5">⭐⭐⭐⭐⭐ — Excellent</option>
+            <option value="4">⭐⭐⭐⭐ — Good</option>
+            <option value="3">⭐⭐⭐ — Average</option>
+            <option value="2">⭐⭐ — Poor</option>
+            <option value="1">⭐ — Very Poor</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Review</label>
+          <textarea id="rv-text" rows="3" placeholder="Describe your experience with this seller…" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm resize-none"></textarea>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="closeReviewModal()" class="flex-1 border-2 border-gray-200 text-gray-700 font-bold py-3 rounded-xl">Cancel</button>
+          <button onclick="submitReview()" class="flex-1 text-white font-bold py-3 rounded-xl" style="background:#F97316">Submit Review</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: UPGRADE ═══ -->
+<div id="upgrade-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);overflow-y:auto;" onclick="if(event.target===this)closeUpgradeModal()">
+  <div class="min-h-full flex items-center justify-center p-4">
+    <div class="text-white rounded-2xl w-full max-w-md p-8 text-center" style="background:#0F172A">
+      <div class="text-5xl mb-3">⭐</div>
+      <h2 class="text-2xl font-bold mb-2">Go Premium</h2>
+      <div class="text-4xl font-black mb-1" style="color:#F97316">K${PREMIUM_PRICE_K}<span class="text-base font-normal text-gray-400"> / month</span></div>
+      <p class="text-gray-400 text-sm mb-6">Unlock ${PREMIUM_LIMIT} listings + priority placement + analytics</p>
+      <ul class="text-left space-y-2 mb-6 text-sm">
+        ${['Up to 30 active listings (was 5)','Priority listing placement','Sales analytics dashboard','Discounted biker delivery — K60','Bulk upload tools','Dedicated seller support'].map(f=>`<li class="flex items-center gap-2 text-gray-300"><span style="color:#F97316">✓</span>${f}</li>`).join('')}
+      </ul>
+      <button onclick="activatePremium()" class="w-full font-bold py-4 rounded-xl mb-3 text-white transition-colors" style="background:#F97316">Activate Premium — K${PREMIUM_PRICE_K}/mo</button>
+      <button onclick="closeUpgradeModal()" class="w-full text-gray-400 text-sm hover:text-white">Maybe later</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: CHECKOUT ═══ -->
+<div id="checkout-modal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.65);overflow-y:auto;padding:16px;" onclick="if(event.target===this)closeCheckout()">
+  <div class="bg-white rounded-2xl w-full max-w-lg mx-auto my-6 overflow-hidden shadow-2xl">
+
+    <!-- Modal header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div>
+        <h2 class="font-bold text-gray-900 text-lg" id="co-title">Secure Checkout</h2>
+        <p class="text-xs text-gray-400 mt-0.5" id="co-subtitle">Powered by Pasampo · Protected by Zambian Consumer Law</p>
+      </div>
+      <button onclick="closeCheckout()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 text-xl font-light">×</button>
+    </div>
+
+    <!-- Step pills -->
+    <div class="flex items-center gap-1 px-6 py-3 bg-gray-50 border-b border-gray-100" id="co-steps"></div>
+
+    <!-- Step content -->
+    <div id="co-body" class="px-6 py-5"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: REFUND POLICY ═══ -->
+<div id="refund-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);overflow-y:auto;padding:16px;" onclick="if(event.target===this)closeRefundModal()">
+  <div class="bg-white rounded-2xl w-full max-w-lg mx-auto my-6 overflow-hidden shadow-2xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div>
+        <h2 class="font-bold text-gray-900">🇿🇲 Zambia Digital Commerce Rights</h2>
+        <p class="text-xs text-gray-400 mt-0.5">ECT Act No. 21 of 2009 · CCPA No. 24 of 2010</p>
+      </div>
+      <button onclick="closeRefundModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 text-xl">×</button>
+    </div>
+    <div class="px-6 py-5 space-y-5 text-sm text-gray-700 overflow-y-auto" style="max-height:70vh">
+
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+        <div class="font-bold text-blue-800 mb-1">⏱️ 7-Day Cooling-Off Period</div>
+        <p class="text-blue-700 text-xs leading-relaxed">Under <strong>Section 36 of the Electronic Communications and Transactions Act No. 21 of 2009</strong>, you have the right to cancel any digital transaction within <strong>7 business days</strong> of receiving goods — without giving any reason and without penalty. A full refund must be issued within 30 days of cancellation.</p>
+      </div>
+
+      <div class="bg-green-50 border border-green-100 rounded-xl p-4">
+        <div class="font-bold text-green-800 mb-1">📦 30-Day Delivery Guarantee</div>
+        <p class="text-green-700 text-xs leading-relaxed">Under <strong>Section 37 of the ECT Act</strong>, if an item is not delivered within <strong>30 days</strong> from the date of purchase, the agreement is automatically cancelled and you are entitled to a full refund. Pasampo's biker delivery operates within 2–4 hours in Lusaka; long-distance orders must ship within 7 business days.</p>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-100 rounded-xl p-4">
+        <div class="font-bold text-amber-800 mb-1">🚫 "No Refund" Clauses Are Illegal</div>
+        <p class="text-amber-700 text-xs leading-relaxed">Under <strong>Section 49 of the Competition and Consumer Protection Act No. 24 of 2010 (CCPA)</strong>, any clause in a digital contract that says "No Refunds", "All Sales Final", or "No Returns" is <strong>void and unenforceable</strong> under Zambian law. Sellers on Pasampo are legally prohibited from including such clauses.</p>
+      </div>
+
+      <div class="bg-purple-50 border border-purple-100 rounded-xl p-4">
+        <div class="font-bold text-purple-800 mb-1">📱 Mobile Money Reversal</div>
+        <p class="text-purple-700 text-xs leading-relaxed">If a transaction fails, is cancelled within the cooling-off period, or qualifies for a refund, Pasampo will initiate a <strong>Mobile Money reversal within 72 hours</strong> to your original Airtel Money or MTN Mobile Money number. You will receive an SMS confirmation when the reversal is processed.</p>
+      </div>
+
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+        <div class="font-bold text-gray-800 mb-1">⚖️ Dispute Resolution</div>
+        <p class="text-gray-600 text-xs leading-relaxed">Disputes must be raised with Pasampo Support within <strong>7 days</strong> of the transaction. Unresolved disputes may be referred to the <strong>Zambia Competition and Consumer Protection Commission (ZCCPC)</strong> at zccpc.org.zm or +260 211 227 999. Pasampo complies fully with ZCCPC enforcement directives.</p>
+      </div>
+
+      <div class="text-xs text-gray-400 text-center pt-2">Last updated: June 2024 · Applies to all transactions on pasampo.zm</div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100">
+      <button onclick="closeRefundModal()" class="w-full text-white font-bold py-3 rounded-xl" style="background:#F97316">I Understand My Rights</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: AUTH (SIGN UP / SIGN IN) ═══ -->
+<div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.65);overflow-y:auto;padding:16px;" onclick="if(event.target===this)closeAuthModal()">
+  <div class="bg-white rounded-2xl w-full max-w-md mx-auto my-8 overflow-hidden shadow-2xl">
+
+    <!-- Logo + close -->
+    <div class="flex items-center justify-between px-6 pt-6 pb-3">
+      <div class="flex items-center gap-2">
+        <img src="assets/pasampo-logo.png" alt="Pasampo" class="brand-logo-sm" />
+        <div>
+          <span class="font-black text-lg text-[#0F172A]">Pasampo</span>
+          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">Secure account</p>
+        </div>
+      </div>
+      <button onclick="closeAuthModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 text-xl">×</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex border-b border-gray-100 mx-6">
+      <button id="tab-signup" onclick="switchAuthTab('signup')"
+        class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors"
+        style="border-color:#F97316;color:#F97316">
+        Create Account
+      </button>
+      <button id="tab-signin" onclick="switchAuthTab('signin')"
+        class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors"
+        style="border-color:transparent;color:#9ca3af">
+        Sign In
+      </button>
+    </div>
+
+    <!-- Form body -->
+    <div id="auth-body" class="px-6 py-5"></div>
+  </div>
+</div>
+
+<!-- checkout map style -->
+<style>
+  #checkout-map { height: 200px; border-radius: 12px; z-index: 1; margin-bottom: 8px; }
+  @keyframes pulse-ring { 0%{transform:scale(.9);opacity:.7} 70%{transform:scale(1.1);opacity:0} 100%{transform:scale(.9);opacity:0} }
+  .ussd-pulse { animation: pulse-ring 1.4s ease-out infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .spinner { animation: spin .9s linear infinite; display:inline-block; }
+</style>
+
+<!-- ═══ LEAFLET MAP SCRIPT ═══ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ─── LUSAKA HUB DATA ──────────────────────────────────────────────
+const LUSAKA_HUBS = [
+  {id:'cbd',       name:'CBD / City Centre',    lat:-15.4167, lng:28.2833, icon:'🏙️', color:'#F97316', listings:3240, desc:'Main commercial hub — markets, shops, offices'},
+  {id:'woodlands', name:'Woodlands',            lat:-15.3867, lng:28.3167, icon:'🌳', color:'#22c55e', listings:892,  desc:'Popular for phones, laptops & electronics'},
+  {id:'kabulonga', name:'Kabulonga',            lat:-15.3833, lng:28.3361, icon:'🏡', color:'#3b82f6', listings:654,  desc:'Affluent suburb — premium goods & vehicles'},
+  {id:'chilenje',  name:'Chilenje',             lat:-15.4417, lng:28.2694, icon:'🏘️', color:'#a855f7', listings:445,  desc:'High-density residential, household goods'},
+  {id:'northmead', name:'Northmead',            lat:-15.3780, lng:28.2886, icon:'🏢', color:'#ec4899', listings:321,  desc:'Mixed commercial-residential, tech & fashion'},
+  {id:'roma',      name:'Roma',                 lat:-15.4097, lng:28.3222, icon:'🏗️', color:'#14b8a6', listings:278,  desc:'Quiet suburb — furniture & home goods'},
+  {id:'libala',    name:'Libala',               lat:-15.4389, lng:28.2833, icon:'🏪', color:'#f59e0b', listings:412,  desc:'Active trading area, mixed goods market'},
+  {id:'arcades',   name:'Arcades / Showgrounds',lat:-15.4028, lng:28.3083, icon:'🛍️', color:'#6366f1', listings:567,  desc:'Shopping complex — fashion & electronics hub'},
+  {id:'emmasdale', name:'Emmasdale',            lat:-15.4222, lng:28.2556, icon:'🏡', color:'#10b981', listings:198,  desc:'Residential area, household items & furniture'},
+  {id:'matero',    name:'Matero',               lat:-15.3597, lng:28.2194, icon:'🏘️', color:'#ef4444', listings:334,  desc:'Dense township, clothing & affordable goods'},
+  {id:'chelston',  name:'Chelston',             lat:-15.3944, lng:28.3389, icon:'🏗️', color:'#8b5cf6', listings:245,  desc:'Eastern suburb — vehicles & appliances'},
+];
+
+// ─── MAP STATE ────────────────────────────────────────────────────
+let mainMap = null, mainStreetLayer = null, mainSatLayer = null;
+let sellMap = null, sellMarker = null;
+let isSatellite = false;
+
+// ─── CORE MAP BUILDER ─────────────────────────────────────────────
+function buildTileLayers(map) {
+  const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors', maxZoom: 19
+  });
+  const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles © Esri — World Imagery', maxZoom: 19
+  });
+  street.addTo(map);
+  return { street, sat };
+}
+
+function addBikerRadius(map) {
+  L.circle([-15.4167, 28.2833], {
+    color: '#F97316', fillColor: '#F97316', fillOpacity: 0.07,
+    weight: 2, dashArray: '8,5', radius: 8000
+  }).addTo(map).bindPopup('<strong>🏍️ Pasampo Biker Coverage Zone</strong><br>~8 km radius from CBD<br><em style="color:#777;font-size:12px">2–4 hour delivery window</em>');
+}
+
+function addHubMarkers(map, onHubClick) {
+  LUSAKA_HUBS.forEach(hub => {
+    const m = L.circleMarker([hub.lat, hub.lng], {
+      color: '#fff', weight: 2,
+      fillColor: hub.color, fillOpacity: 0.88, radius: 14
+    }).addTo(map);
+
+    m.bindPopup(`
+      <div style="min-width:170px;font-family:system-ui">
+        <strong style="font-size:13px">${hub.icon} ${hub.name}</strong>
+        <p style="font-size:11px;color:#666;margin:4px 0">${hub.desc}</p>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+          <span style="background:#fff7ed;color:#F97316;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">${hub.listings.toLocaleString()} listings</span>
+        </div>
+      </div>
+    `);
+
+    if (onHubClick) m.on('click', () => onHubClick(hub));
+
+    // Label tooltip
+    m.bindTooltip(hub.icon + ' ' + hub.name.split('/')[0].trim(), {
+      permanent: false, direction: 'top', offset: [0, -14],
+      className: 'text-xs font-semibold'
+    });
+  });
+}
+
+// ─── MAIN MAP PAGE ────────────────────────────────────────────────
+function initMainMap() {
+  if (!window.L) { setTimeout(initMainMap, 200); return; }
+  const el = document.getElementById('main-map');
+  if (!el) return;
+  if (mainMap) { setTimeout(() => mainMap.invalidateSize(), 50); return; }
+
+  mainMap = L.map('main-map', { zoomControl: true }).setView([-15.4167, 28.2833], 12);
+  const layers = buildTileLayers(mainMap);
+  mainStreetLayer = layers.street;
+  mainSatLayer    = layers.sat;
+
+  addBikerRadius(mainMap);
+  addHubMarkers(mainMap, (hub) => {
+    flyToHub(hub.id);
+    document.querySelectorAll('.hub-row').forEach(r => {
+      r.style.background = ''; r.style.borderColor = 'transparent';
+    });
+    const row = document.getElementById('hub-' + hub.id);
+    if (row) { row.style.background = '#fff7ed'; row.style.borderColor = '#F97316'; row.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  });
+
+  renderMapHubs();
+  setTimeout(() => mainMap.invalidateSize(), 150);
+}
+
+function renderMapHubs() {
+  const el = document.getElementById('map-hubs');
+  if (!el) return;
+  el.innerHTML = LUSAKA_HUBS.map(h => `
+    <div id="hub-${h.id}" class="hub-row bg-white rounded-xl p-3 border-2 cursor-pointer"
+      style="border-color:transparent" onclick="flyToHub('${h.id}')">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center text-base shrink-0"
+          style="background:${h.color}22">${h.icon}</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-sm text-gray-900 truncate">${h.name}</div>
+          <div class="text-xs text-gray-400 truncate">${h.desc}</div>
+        </div>
+        <div class="text-xs font-bold shrink-0" style="color:${h.color}">${h.listings.toLocaleString()}</div>
+      </div>
+    </div>`).join('');
+}
+
+function flyToHub(id) {
+  const hub = LUSAKA_HUBS.find(h => h.id === id);
+  if (!hub || !mainMap) return;
+  mainMap.flyTo([hub.lat, hub.lng], 14, {duration: 1.0, easeLinearity: 0.25});
+  document.querySelectorAll('.hub-row').forEach(r => { r.style.background=''; r.style.borderColor='transparent'; });
+  const row = document.getElementById('hub-' + hub.id);
+  if (row) { row.style.background = '#fff7ed'; row.style.borderColor = '#F97316'; }
+}
+
+function toggleMapView() {
+  if (!mainMap) return;
+  isSatellite = !isSatellite;
+  const btn = document.getElementById('map-toggle-btn');
+  if (isSatellite) {
+    mainMap.removeLayer(mainStreetLayer);
+    mainSatLayer.addTo(mainMap);
+    if (btn) btn.textContent = '🗺️ Street View';
+  } else {
+    mainMap.removeLayer(mainSatLayer);
+    mainStreetLayer.addTo(mainMap);
+    if (btn) btn.textContent = '🛰️ Satellite View';
+  }
+}
+
+// ─── SELL MINI-MAP ────────────────────────────────────────────────
+function initSellMap() {
+  if (!window.L) { setTimeout(initSellMap, 200); return; }
+  const el = document.getElementById('sell-map');
+  if (!el || sellMap) return;
+
+  sellMap = L.map('sell-map', {zoomControl:true, scrollWheelZoom:false}).setView([-15.4167, 28.2833], 12);
+  buildTileLayers(sellMap);
+  addBikerRadius(sellMap);
+  addHubMarkers(sellMap, (hub) => pickSellHub(hub.id));
+
+  // Click anywhere to drop a custom pin
+  sellMap.on('click', function(e) {
+    placeSellPin(e.latlng.lat, e.latlng.lng, null);
+  });
+
+  setTimeout(() => sellMap.invalidateSize(), 100);
+}
+
+function placeSellPin(lat, lng, hubId) {
+  if (sellMarker) sellMap.removeLayer(sellMarker);
+  sellMarker = L.marker([lat, lng], {
+    icon: L.divIcon({
+      className: '',
+      html: '<div style="background:#F97316;width:24px;height:24px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>',
+      iconSize: [24,24], iconAnchor: [12,24]
+    })
+  }).addTo(sellMap);
+
+  const locInput = document.getElementById('sell-location-input');
+  if (hubId) {
+    const hub = LUSAKA_HUBS.find(h => h.id === hubId);
+    if (locInput && hub) locInput.value = 'Lusaka, ' + hub.name;
+  } else {
+    if (locInput) locInput.value = `Lusaka (${lat.toFixed(4)}°S, ${lng.toFixed(4)}°E)`;
+  }
+
+  document.querySelectorAll('.sell-hub-btn').forEach(b => {
+    const active = b.dataset.hub === hubId;
+    b.style.borderColor = active ? '#F97316' : '#e5e7eb';
+    b.style.background  = active ? '#fff7ed' : 'white';
+    b.style.color       = active ? '#F97316' : '';
+  });
+}
+
+function pickSellHub(id) {
+  const hub = LUSAKA_HUBS.find(h => h.id === id);
+  if (!hub || !sellMap) return;
+  sellMap.flyTo([hub.lat, hub.lng], 14, {duration:0.8});
+  placeSellPin(hub.lat, hub.lng, id);
+}
+
+function destroySellMap() {
+  if (sellMap) { sellMap.remove(); sellMap = null; sellMarker = null; }
+}
+</script>
+
+<!-- ═══ FIREBASE AUTH SDK ═══ -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDZPBnpbWttDAV7xxDfi2mujiEDgIa1RoU",
+    authDomain: "pasampo-e4d7f.firebaseapp.com",
+    projectId: "pasampo-e4d7f",
+    storageBucket: "pasampo-e4d7f.firebasestorage.app",
+    messagingSenderId: "708502965513",
+    appId: "1:708502965513:web:b15c4d41d43a31e0f357d8"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  function publicUserFromFirebase(user, extra = {}) {
+    return {
+      uid: user.uid,
+      name: extra.name || user.displayName || user.email?.split("@")[0] || "Pasampo User",
+      phone: extra.phone || user.phoneNumber || "",
+      email: user.email || extra.email || "",
+      provider: extra.provider || user.providerData?.[0]?.providerId || "password",
+      verificationStatus: extra.verificationStatus || "not_started",
+      joinedAt: new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" })
+    };
+  }
+
+  window.PasampoFirebaseAuth = {
+    ready: true,
+    async signUp({ name, phone, email, password }) {
+      const credential = await auth.createUserWithEmailAndPassword(email, password);
+      await credential.user.updateProfile({ displayName: name });
+      return publicUserFromFirebase(credential.user, { name, phone: "+260" + phone, email });
+    },
+    async signIn({ email, password }) {
+      const credential = await auth.signInWithEmailAndPassword(email, password);
+      return publicUserFromFirebase(credential.user);
+    },
+    async resetPassword(email) {
+      await auth.sendPasswordResetEmail(email);
+    },
+    async social(providerName) {
+      let provider;
+      if (providerName === "Google") provider = new firebase.auth.GoogleAuthProvider();
+      if (!provider) throw new Error("Unsupported provider");
+      const credential = await auth.signInWithPopup(provider);
+      return publicUserFromFirebase(credential.user, { provider: providerName });
+    },
+    async signOut() {
+      await auth.signOut();
+    }
+  };
+  document.documentElement.dataset.firebaseAuth = "ready";
+
+  auth.onAuthStateChanged((firebaseUser) => {
+    if (!firebaseUser) return;
+    const existing = (() => {
+      try { return JSON.parse(localStorage.getItem("pasampo_user") || "null"); }
+      catch(e) { return null; }
+    })();
+    const merged = {
+      ...publicUserFromFirebase(firebaseUser),
+      ...(existing || {}),
+      uid: firebaseUser.uid,
+      email: firebaseUser.email || existing?.email || "",
+      name: existing?.name || firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Pasampo User"
+    };
+    localStorage.setItem("pasampo_user", JSON.stringify(merged));
+    if (typeof renderAuthBtn === "function") renderAuthBtn();
+  });
+</script>
+
+<!-- ═══ CHECKOUT + REFUND LOGIC ═══ -->
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────────────
+const PLATFORM_FEE_K = 26;   // $1 USD ≈ K26
+const BIKER_FEE_K    = 80;
+const ZMW_RATE       = 26;
+
+// ─── CHECKOUT STATE ──────────────────────────────────────────────
+let coProduct     = null;
+let coStep        = 1;
+let coDelivery    = 'biker'; // 'biker' | 'self'
+let coNetwork     = 'airtel'; // 'airtel' | 'mtn' | 'stripe'
+let coPhone       = '';
+let coStripeEmail = '';
+let coHubId       = null;
+let coAgreed      = false;
+let coMap         = null;
+let coMapMarker   = null;
+let ussdTimer     = null;
+
+// ─── OPEN / CLOSE ─────────────────────────────────────────────────
+function openCheckoutModal(productId) {
+  coProduct = PRODUCTS.find(p => p.id === productId);
+  if (!coProduct) return;
+  coStep = 1; coDelivery = 'biker'; coNetwork = 'airtel'; coPhone = ''; coStripeEmail = ''; coHubId = null; coAgreed = false;
+  document.getElementById('checkout-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  renderCoStep();
+}
+function closeCheckout() {
+  document.getElementById('checkout-modal').style.display = 'none';
+  document.body.style.overflow = '';
+  if (coMap) { coMap.remove(); coMap = null; coMapMarker = null; }
+  clearTimeout(ussdTimer);
+}
+
+// ─── STEP PILLS ───────────────────────────────────────────────────
+function renderCoPills() {
+  const labels = ['Review','Payment','Confirm'];
+  document.getElementById('co-steps').innerHTML = labels.map((l,i)=>{
+    const n = i+1;
+    const done   = coStep > n;
+    const active = coStep === n;
+    return `<div class="flex items-center gap-1">
+      ${i>0?'<div class="h-px w-4 bg-gray-200 mx-0.5"></div>':''}
+      <div class="flex items-center gap-1.5">
+        <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+          style="background:${done||active?'#F97316':'#e5e7eb'};color:${done||active?'white':'#9ca3af'}">
+          ${done?'✓':n}
+        </div>
+        <span class="text-xs ${active?'font-semibold text-gray-900':'text-gray-400'}">${l}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── MAIN RENDER DISPATCHER ───────────────────────────────────────
+function renderCoStep() {
+  renderCoPills();
+  if (coStep===1) renderCoStep1();
+  if (coStep===2) renderCoStep2();
+  if (coStep===3) renderCoStep3();
+  if (coStep===4) renderCoStep4();
+}
+
+// ─── STEP 1: REVIEW ORDER + MAP ───────────────────────────────────
+function renderCoStep1() {
+  const p   = coProduct;
+  const fee = PLATFORM_FEE_K;
+  const del = coDelivery==='biker' ? BIKER_FEE_K : 0;
+  const tot = p.price + fee + del;
+  const bg  = (window.CATBG||{})[p.cat] || '#f1f5f9';
+  const emu = (window.CATEMU||{})[p.cat] || '📦';
+
+  document.getElementById('co-title').textContent = 'Review Your Order';
+  document.getElementById('co-subtitle').textContent = 'Confirm details before payment';
+
+  document.getElementById('co-body').innerHTML = `
+    <!-- Product summary -->
+    <div class="flex gap-3 mb-5 pb-5 border-b border-gray-100">
+      <div class="w-16 h-16 rounded-xl flex items-center justify-center text-4xl shrink-0"
+        style="background:${bg}">${emu}</div>
+      <div class="flex-1">
+        <p class="font-semibold text-gray-900 text-sm leading-snug">${p.title}</p>
+        <p class="text-xs text-gray-500 mt-1">${p.cond} · ${p.loc}</p>
+        <p class="text-xs mt-1">${p.verified?'<span class="badge-v">✓ Verified Seller</span>':''}</p>
+      </div>
+    </div>
+
+    <!-- Price breakdown -->
+    <div class="space-y-2 mb-5 pb-5 border-b border-gray-100">
+      <div class="flex justify-between text-sm text-gray-600">
+        <span>Item price</span><span class="font-medium">K ${p.price.toLocaleString()}</span>
+      </div>
+      <div class="flex justify-between text-sm text-gray-600">
+        <span>Platform fee <span class="text-xs text-gray-400">($1 ≈ K${ZMW_RATE})</span></span>
+        <span class="font-medium">K ${fee}</span>
+      </div>
+      <div id="co-del-row" class="flex justify-between text-sm text-gray-600">
+        <span>Biker delivery <span class="text-xs text-gray-400">(2–4 hrs, Lusaka)</span></span>
+        <span class="font-medium">K ${BIKER_FEE_K}</span>
+      </div>
+      <div class="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-gray-100">
+        <span>Total</span>
+        <span id="co-total" style="color:#F97316">K ${tot.toLocaleString()}</span>
+      </div>
+    </div>
+
+    <!-- Delivery toggle -->
+    <p class="text-sm font-semibold text-gray-700 mb-2">Delivery method</p>
+    <div class="grid grid-cols-2 gap-2 mb-5 pb-5 border-b border-gray-100">
+      <button id="co-del-biker" onclick="setCoDelivery('biker')"
+        class="py-2.5 text-sm rounded-xl border-2 font-medium transition-colors"
+        style="border-color:#F97316;background:#fff7ed;color:#F97316">
+        🏍️ Biker — K80
+      </button>
+      <button id="co-del-self" onclick="setCoDelivery('self')"
+        class="py-2.5 text-sm rounded-xl border-2 font-medium transition-colors"
+        style="border-color:#e5e7eb;background:white;color:#6b7280">
+        🤝 Self / Pickup — Free
+      </button>
+    </div>
+
+    <!-- Delivery location map -->
+    <p class="text-sm font-semibold text-gray-700 mb-2">📍 Your delivery location</p>
+    <div class="grid grid-cols-3 gap-1.5 mb-2">
+      ${LUSAKA_HUBS.slice(0,6).map(h=>`
+        <button type="button" class="co-hub-btn py-1.5 px-1 text-xs rounded-xl border-2 font-medium transition-colors"
+          data-hub="${h.id}" onclick="pickCoHub('${h.id}')"
+          style="border-color:#e5e7eb;background:white">${h.icon} ${h.name.split('/')[0].trim()}</button>
+      `).join('')}
+    </div>
+    <div id="checkout-map"></div>
+    <input id="co-location" type="text" placeholder="Click a hub or tap the map…"
+      class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm mt-2" />
+
+    <button onclick="advanceCoStep()"
+      class="w-full mt-5 text-white font-bold py-4 rounded-xl transition-colors" style="background:#F97316">
+      Continue to Payment →
+    </button>`;
+
+  setTimeout(initCoMap, 120);
+}
+
+function setCoDelivery(type) {
+  coDelivery = type;
+  const fee = coDelivery==='biker' ? BIKER_FEE_K : 0;
+  const tot = coProduct.price + PLATFORM_FEE_K + fee;
+  const bikerBtn = document.getElementById('co-del-biker');
+  const selfBtn  = document.getElementById('co-del-self');
+  const delRow   = document.getElementById('co-del-row');
+  const totEl    = document.getElementById('co-total');
+  if (bikerBtn) { bikerBtn.style.borderColor = type==='biker'?'#F97316':'#e5e7eb'; bikerBtn.style.background = type==='biker'?'#fff7ed':'white'; bikerBtn.style.color = type==='biker'?'#F97316':'#6b7280'; }
+  if (selfBtn)  { selfBtn.style.borderColor  = type==='self' ?'#F97316':'#e5e7eb'; selfBtn.style.background  = type==='self' ?'#fff7ed':'white'; selfBtn.style.color  = type==='self' ?'#F97316':'#6b7280'; }
+  if (delRow)   delRow.style.display = type==='biker' ? '' : 'none';
+  if (totEl)    totEl.textContent = 'K ' + tot.toLocaleString();
+}
+
+function initCoMap() {
+  if (!window.L) { setTimeout(initCoMap, 200); return; }
+  const el = document.getElementById('checkout-map');
+  if (!el || coMap) return;
+  coMap = L.map('checkout-map',{scrollWheelZoom:false}).setView([-15.4167,28.2833],12);
+  buildTileLayers(coMap);
+  addBikerRadius(coMap);
+  addHubMarkers(coMap, (hub) => pickCoHub(hub.id));
+  coMap.on('click', e => placeCoPin(e.latlng.lat, e.latlng.lng, null));
+  setTimeout(()=>coMap.invalidateSize(),100);
+}
+
+function pickCoHub(id) {
+  const hub = LUSAKA_HUBS.find(h=>h.id===id);
+  if (!hub || !coMap) return;
+  coHubId = id;
+  coMap.flyTo([hub.lat,hub.lng],14,{duration:.8});
+  placeCoPin(hub.lat, hub.lng, id);
+}
+
+function placeCoPin(lat,lng,hubId) {
+  if (coMapMarker) coMap.removeLayer(coMapMarker);
+  coMapMarker = L.marker([lat,lng],{icon:L.divIcon({
+    className:'',
+    html:'<div style="background:#F97316;width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>',
+    iconSize:[22,22],iconAnchor:[11,22]
+  })}).addTo(coMap);
+  const locEl = document.getElementById('co-location');
+  if (hubId) {
+    const hub = LUSAKA_HUBS.find(h=>h.id===hubId);
+    if (locEl && hub) locEl.value = 'Lusaka, ' + hub.name;
+  } else {
+    if (locEl) locEl.value = `Lusaka (${lat.toFixed(4)}°S, ${lng.toFixed(4)}°E)`;
+  }
+  document.querySelectorAll('.co-hub-btn').forEach(b=>{
+    const active = b.dataset.hub===hubId;
+    b.style.borderColor = active?'#F97316':'#e5e7eb';
+    b.style.background  = active?'#fff7ed':'white';
+    b.style.color       = active?'#F97316':'';
+  });
+}
+
+function advanceCoStep() {
+  const loc = (document.getElementById('co-location')||{}).value;
+  if (!loc || loc.trim()==='') { alert('Please select your delivery location on the map.'); return; }
+  if (coMap) { coMap.remove(); coMap=null; coMapMarker=null; }
+  coStep++; renderCoStep();
+}
+
+// ─── STEP 2: PAYMENT + REFUND POLICY ─────────────────────────────
+function renderCoStep2() {
+  const fee = PLATFORM_FEE_K;
+  const del = coDelivery==='biker' ? BIKER_FEE_K : 0;
+  const tot = coProduct.price + fee + del;
+
+  document.getElementById('co-title').textContent = 'Payment Details';
+  document.getElementById('co-subtitle').textContent = 'Airtel Money · MTN Money · Stripe Card';
+
+  document.getElementById('co-body').innerHTML = `
+    <!-- Payment selector -->
+    <p class="text-sm font-semibold text-gray-700 mb-2">Choose payment method</p>
+    <div class="grid grid-cols-3 gap-2 mb-5">
+      <button id="net-airtel" onclick="setCoNetwork('airtel')"
+        class="py-3 rounded-xl border-2 font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2"
+        style="border-color:#e40000;background:#fff5f5;color:#e40000">
+        <span>📡</span><span>Airtel</span>
+      </button>
+      <button id="net-mtn" onclick="setCoNetwork('mtn')"
+        class="py-3 rounded-xl border-2 font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2"
+        style="border-color:#e5e7eb;background:white;color:#6b7280">
+        <span>📡</span><span>MTN</span>
+      </button>
+      <button id="net-stripe" onclick="setCoNetwork('stripe')"
+        class="py-3 rounded-xl border-2 font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2"
+        style="border-color:#e5e7eb;background:white;color:#6b7280">
+        <span>💳</span><span>Stripe</span>
+      </button>
+    </div>
+
+    <!-- Mobile money details -->
+    <div class="mb-5" id="mobile-money-fields">
+      <label class="block text-sm font-semibold text-gray-700 mb-1.5">
+        Your <span id="net-label">Airtel</span> Money number
+      </label>
+      <div class="flex">
+        <span class="flex items-center bg-gray-100 border-2 border-r-0 border-gray-200 rounded-l-xl px-3 text-sm text-gray-600 font-medium">+260</span>
+        <input id="co-phone" type="tel" maxlength="9" placeholder="97XXXXXXX"
+          class="flex-1 border-2 border-l-0 border-gray-200 rounded-r-xl px-4 py-3 text-sm"
+          oninput="coPhone=this.value" style="outline:none" />
+      </div>
+      <p class="text-xs text-gray-400 mt-1">Format: 97XXXXXXX (Airtel) or 76XXXXXXX (MTN)</p>
+    </div>
+
+    <!-- Stripe details -->
+    <div class="mb-5 hidden" id="stripe-fields">
+      <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email for Stripe receipt</label>
+      <input id="co-stripe-email" type="email" placeholder="you@email.com"
+        class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm mb-3"
+        oninput="coStripeEmail=this.value" />
+      <div class="rounded-2xl p-4 border border-indigo-100 bg-indigo-50">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-9 h-9 rounded-xl bg-[#635BFF] text-white flex items-center justify-center font-black text-sm">S</div>
+          <div>
+            <p class="font-bold text-gray-900 text-sm">Stripe secure card checkout</p>
+            <p class="text-xs text-indigo-700">Prototype mode now. Production will redirect to Stripe Checkout.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-4 gap-2 text-xs text-gray-500">
+          <span class="bg-white rounded-lg px-2 py-1 text-center font-semibold">Visa</span>
+          <span class="bg-white rounded-lg px-2 py-1 text-center font-semibold">Mastercard</span>
+          <span class="bg-white rounded-lg px-2 py-1 text-center font-semibold">Amex</span>
+          <span class="bg-white rounded-lg px-2 py-1 text-center font-semibold">Apple Pay*</span>
+        </div>
+        <p class="text-[10px] text-indigo-600 mt-2">*Wallet availability depends on browser and live Stripe setup.</p>
+      </div>
+    </div>
+
+    <!-- Order total reminder -->
+    <div class="rounded-xl p-4 mb-5 flex items-center justify-between" style="background:#f8fafc;border:1px solid #e5e7eb">
+      <div>
+        <p class="text-xs text-gray-500">Amount to pay</p>
+        <p class="font-black text-xl" style="color:#F97316">K ${tot.toLocaleString()}</p>
+        <p class="text-[10px] text-gray-400">Includes K${fee} platform fee ($1 USD) · ${coDelivery==='biker'?'K'+BIKER_FEE_K+' biker delivery':'Self delivery'}</p>
+      </div>
+      <div class="text-3xl" id="payment-icon">📱</div>
+    </div>
+
+    <!-- Refund policy summary (inline) -->
+    <div class="rounded-xl p-4 mb-4 space-y-2" style="background:#f0fdf4;border:1px solid #bbf7d0">
+      <p class="text-xs font-bold text-green-800 mb-2">🛡️ Your Rights Under Zambian Law</p>
+      <div class="text-xs text-green-700 space-y-1.5">
+        <div class="flex items-start gap-2"><span>⏱️</span><span><strong>7-day cooling-off</strong> — Cancel within 7 business days for any reason (ECT Act S.36)</span></div>
+        <div class="flex items-start gap-2"><span>📦</span><span><strong>30-day delivery</strong> — Auto-refund if not delivered on time (ECT Act S.37)</span></div>
+        <div class="flex items-start gap-2"><span>🚫</span><span><strong>"No Refund" clauses are illegal</strong> under Zambian law (CCPA S.49)</span></div>
+        <div class="flex items-start gap-2"><span>💸</span><span><strong>72-hr reversal</strong> to your original Mobile Money or Stripe/card payment method for any qualifying refund</span></div>
+      </div>
+      <button onclick="openRefundModal()" class="text-xs font-bold mt-2 hover:underline" style="color:#15803d">
+        View Full Consumer Rights Policy →
+      </button>
+    </div>
+
+    <!-- Consent tick -->
+    <label class="flex items-start gap-3 mb-5 cursor-pointer p-3 rounded-xl" style="background:#f8fafc">
+      <input type="checkbox" id="co-agree" class="mt-0.5 w-4 h-4 shrink-0" style="accent-color:#F97316"
+        onchange="coAgreed=this.checked" />
+      <span class="text-xs text-gray-600 leading-relaxed">
+        I have read and understood my consumer rights under the Zambia
+        <strong>ECT Act (Sections 36 &amp; 37)</strong> and <strong>CCPA (Section 49)</strong>.
+        I authorise this payment of <strong>K ${tot.toLocaleString()}</strong> using <span id="agree-net-label">Airtel Money</span>.
+      </span>
+    </label>
+
+    <div class="flex gap-3">
+      <button onclick="coStep--;renderCoStep();" class="flex-1 border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl">← Back</button>
+      <button onclick="confirmPayment()"
+        class="flex-1 text-white font-bold py-4 rounded-xl transition-colors" style="background:#F97316">
+        Confirm &amp; Pay K ${tot.toLocaleString()} →
+      </button>
+    </div>`;
+}
+
+function setCoNetwork(net) {
+  coNetwork = net;
+  const airtel = document.getElementById('net-airtel');
+  const mtn    = document.getElementById('net-mtn');
+  const stripe = document.getElementById('net-stripe');
+  if (airtel) { airtel.style.borderColor = net==='airtel'?'#e40000':'#e5e7eb'; airtel.style.background = net==='airtel'?'#fff5f5':'white'; airtel.style.color = net==='airtel'?'#e40000':'#6b7280'; }
+  if (mtn)    { mtn.style.borderColor    = net==='mtn'   ?'#fbbf24':'#e5e7eb'; mtn.style.background    = net==='mtn'   ?'#fffbeb':'white'; mtn.style.color    = net==='mtn'   ?'#b45309':'#6b7280'; }
+  if (stripe) { stripe.style.borderColor = net==='stripe'?'#635BFF':'#e5e7eb'; stripe.style.background = net==='stripe'?'#eef2ff':'white'; stripe.style.color = net==='stripe'?'#4f46e5':'#6b7280'; }
+  const isStripe = net === 'stripe';
+  const mobileFields = document.getElementById('mobile-money-fields');
+  const stripeFields = document.getElementById('stripe-fields');
+  if (mobileFields) mobileFields.classList.toggle('hidden', isStripe);
+  if (stripeFields) stripeFields.classList.toggle('hidden', !isStripe);
+  const icon = document.getElementById('payment-icon');
+  if (icon) icon.textContent = isStripe ? '💳' : '📱';
+  const lbl  = net==='airtel' ? 'Airtel' : net==='mtn' ? 'MTN' : 'Stripe Card';
+  const el1  = document.getElementById('net-label');
+  const el2  = document.getElementById('agree-net-label');
+  if (el1) el1.textContent = lbl;
+  if (el2) el2.textContent = net === 'stripe' ? 'Stripe secure card checkout' : lbl + ' Money';
+}
+
+function confirmPayment() {
+  if (!coAgreed) { alert('Please tick the consumer rights box before confirming.'); return; }
+  if (coNetwork === 'stripe') {
+    const email = (document.getElementById('co-stripe-email')||{}).value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Please enter a valid email address for your Stripe receipt.'); return; }
+    coStripeEmail = email;
+    coPhone = '';
+    coStep++; renderCoStep();
+    return;
+  }
+  const phone = document.getElementById('co-phone').value.trim();
+  if (!phone || phone.length < 9) { alert('Please enter your 9-digit mobile money number.'); return; }
+  coPhone = '+260' + phone;
+  coStep++; renderCoStep();
+}
+
+// ─── STEP 3: USSD PIN ENTRY ───────────────────────────────────────
+function renderCoStep3() {
+  if (coNetwork === 'stripe') { renderStripeStep3(); return; }
+  const tot = coProduct.price + PLATFORM_FEE_K + (coDelivery==='biker'?BIKER_FEE_K:0);
+  const ussdRef = 'PAY-' + Math.random().toString(36).substr(2,8).toUpperCase();
+
+  document.getElementById('co-title').textContent    = 'Enter Your PIN';
+  document.getElementById('co-subtitle').textContent = coPhone + ' · ' + (coNetwork==='airtel'?'Airtel Money':'MTN Mobile Money');
+
+  document.getElementById('co-body').innerHTML = `
+    <div class="text-center mb-5">
+      <div class="relative w-20 h-20 mx-auto mb-4">
+        <div class="absolute inset-0 rounded-full ussd-pulse" style="background:rgba(249,115,22,.2)"></div>
+        <div class="w-20 h-20 rounded-full flex items-center justify-center text-4xl" style="background:rgba(249,115,22,.1)">📱</div>
+      </div>
+      <p class="text-gray-500 text-sm">A USSD prompt has been pushed to <strong class="text-gray-900">${coPhone}</strong>.<br>Enter your Mobile Money PIN below to authorise.</p>
+    </div>
+
+    <!-- USSD terminal UI -->
+    <div class="rounded-xl p-4 mb-5 text-left" style="background:#0F172A;color:#e2e8f0;font-family:monospace;font-size:12px;line-height:1.8">
+      <div style="color:#22c55e;font-size:13px;font-weight:bold">▶ ${coNetwork==='airtel'?'AIRTEL MONEY':'MTN MOBILE MONEY'}</div>
+      <div>─────────────────────</div>
+      <div>Pay: <span style="color:#F97316;font-weight:bold">K ${tot.toLocaleString()}</span></div>
+      <div>To: <span style="color:#fff">PASAMPO LTD</span></div>
+      <div>Ref: <span style="color:#94a3b8">${ussdRef}</span></div>
+      <div>─────────────────────</div>
+      <div style="color:#fbbf24">Enter PIN to authorise:</div>
+    </div>
+
+    <!-- PIN dots display -->
+    <div class="flex justify-center gap-3 mb-4" id="pin-dots">
+      ${[0,1,2,3,4].map(i=>`<div class="w-4 h-4 rounded-full border-2" style="border-color:#d1d5db" id="dot-${i}"></div>`).join('')}
+    </div>
+
+    <!-- Hidden PIN input -->
+    <input id="ussd-pin" type="password" maxlength="5" inputmode="numeric" pattern="[0-9]*"
+      placeholder="Enter 5-digit PIN"
+      class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] font-bold"
+      oninput="updatePinDots(this.value)"
+      style="letter-spacing:0.5em" />
+    <p class="text-xs text-gray-400 text-center mt-2">Your PIN is never stored or shared</p>
+
+    <div id="pin-error" class="text-red-500 text-sm text-center mt-2 hidden">Incorrect PIN. Please try again.</div>
+
+    <div class="flex gap-3 mt-5">
+      <button onclick="coStep--;renderCoStep();" class="flex-1 border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl">← Cancel</button>
+      <button onclick="submitUssdPin()" class="flex-1 text-white font-bold py-4 rounded-xl" style="background:#F97316">
+        Authorise Payment ✓
+      </button>
+    </div>`;
+}
+
+function updatePinDots(val) {
+  for (let i=0; i<5; i++) {
+    const dot = document.getElementById('dot-'+i);
+    if (dot) {
+      dot.style.background  = i < val.length ? '#F97316' : '';
+      dot.style.borderColor = i < val.length ? '#F97316' : '#d1d5db';
+    }
+  }
+}
+
+function renderStripeStep3() {
+  const tot = coProduct.price + PLATFORM_FEE_K + (coDelivery==='biker'?BIKER_FEE_K:0);
+  const stripeRef = 'pi_demo_' + Math.random().toString(36).substr(2,10);
+
+  document.getElementById('co-title').textContent    = 'Stripe Checkout';
+  document.getElementById('co-subtitle').textContent = coStripeEmail + ' · Secure card payment';
+
+  document.getElementById('co-body').innerHTML = `
+    <div class="rounded-3xl overflow-hidden mb-5" style="background:linear-gradient(135deg,#635BFF,#0A2540);">
+      <div class="p-5 text-white">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-2">
+            <div class="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center font-black">S</div>
+            <div>
+              <p class="font-black">Stripe</p>
+              <p class="text-xs text-white/70">Secure card checkout</p>
+            </div>
+          </div>
+          <span class="text-xs bg-white/15 px-3 py-1 rounded-full">Prototype</span>
+        </div>
+        <p class="text-sm text-white/70 mb-1">Amount</p>
+        <p class="text-4xl font-black mb-4">K ${tot.toLocaleString()}</p>
+        <div class="bg-white/10 rounded-2xl p-3 text-xs space-y-1">
+          <div class="flex justify-between"><span>Item</span><strong>${coProduct.title.slice(0,26)}…</strong></div>
+          <div class="flex justify-between"><span>Receipt</span><strong>${coStripeEmail}</strong></div>
+          <div class="flex justify-between"><span>Reference</span><strong>${stripeRef}</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl p-4 mb-5 bg-gray-50 border border-gray-200">
+      <p class="font-bold text-gray-900 text-sm mb-2">Production note</p>
+      <p class="text-xs text-gray-500 leading-relaxed">
+        In the live app, this button will call your backend to create a Stripe Checkout Session, then redirect the buyer to Stripe's hosted payment page. No card details should be handled directly by Pasampo.
+      </p>
+    </div>
+
+    <div class="flex gap-3">
+      <button onclick="coStep--;renderCoStep();" class="flex-1 border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl">← Back</button>
+      <button onclick="submitStripePayment()" class="flex-1 text-white font-bold py-4 rounded-xl" style="background:#635BFF">
+        Authorise with Stripe ✓
+      </button>
+    </div>`;
+}
+
+function submitStripePayment() {
+  const btn = document.querySelector('#co-body button[onclick="submitStripePayment()"]');
+  if (btn) { btn.disabled=true; btn.innerHTML='<span class="spinner">⏳</span> Contacting Stripe…'; }
+  setTimeout(() => { coStep++; renderCoStep(); }, 1600);
+}
+
+function submitUssdPin() {
+  const pin = (document.getElementById('ussd-pin')||{}).value;
+  if (!pin || pin.length < 4) {
+    const err = document.getElementById('pin-error');
+    if (err) { err.classList.remove('hidden'); err.textContent = 'Please enter your ' + (coNetwork==='airtel'?'Airtel':'MTN') + ' Money PIN (at least 4 digits).'; }
+    return;
+  }
+  // Show brief processing spinner, then advance
+  const btn = document.querySelector('#co-body button[onclick="submitUssdPin()"]');
+  if (btn) { btn.disabled=true; btn.innerHTML='<span class="spinner">⏳</span> Processing…'; }
+  setTimeout(() => { coStep++; renderCoStep(); }, 1800);
+}
+
+// ─── STEP 4: ORDER CONFIRMED ──────────────────────────────────────
+function renderCoStep4() {
+  const ref = 'PAS-' + Math.random().toString(36).substr(2,6).toUpperCase();
+  const del = coDelivery==='biker' ? BIKER_FEE_K : 0;
+  const tot = coProduct.price + PLATFORM_FEE_K + del;
+  const paidVia = coNetwork === 'stripe'
+    ? 'Stripe card checkout — receipt sent to ' + coStripeEmail
+    : (coNetwork==='airtel'?'Airtel':'MTN') + ' Money — ' + coPhone;
+  const confirmationLine = coNetwork === 'stripe'
+    ? 'Stripe receipt sent to ' + coStripeEmail
+    : 'SMS confirmation sent to ' + coPhone;
+
+  document.getElementById('co-title').textContent    = 'Order Confirmed!';
+  document.getElementById('co-subtitle').textContent = ref;
+
+  document.getElementById('co-body').innerHTML = `
+    <div class="text-center">
+      <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">✅</div>
+      <h3 class="text-xl font-bold text-gray-900 mb-1">Payment Successful</h3>
+      <p class="text-gray-500 text-sm mb-5">K ${tot.toLocaleString()} paid via ${paidVia}</p>
+
+      <div class="rounded-2xl p-4 text-left space-y-2 mb-5 text-sm" style="background:#f0fdf4;border:1px solid #bbf7d0">
+        <div class="flex items-center gap-2 text-green-700"><span>✅</span><span>Payment received by Pasampo</span></div>
+        <div class="flex items-center gap-2 text-green-700"><span>${coDelivery==='biker'?'🏍️':'🤝'}</span><span>${coDelivery==='biker'?'Biker assigned — arriving 2–4 hrs':'Coordinate pickup with seller'}</span></div>
+        <div class="flex items-center gap-2 text-green-700"><span>📩</span><span>${confirmationLine}</span></div>
+        <div class="flex items-center gap-2 text-green-700"><span>🛡️</span><span>7-day cooling-off period starts today</span></div>
+      </div>
+
+      <div class="rounded-xl p-3 mb-5 text-xs text-gray-500" style="background:#f8fafc;border:1px solid #e5e7eb">
+        <strong>Order Ref:</strong> ${ref} · <strong>Item:</strong> ${coProduct.title.slice(0,30)}…
+        <br><strong>Your consumer rights</strong> under ECT Act S.36 are active for 7 business days.
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="closeCheckout()" class="flex-1 border-2 border-gray-200 text-gray-700 font-bold py-3 rounded-xl">🛍️ Keep Shopping</button>
+        <button onclick="closeCheckout();navigate('store');" class="flex-1 text-white font-bold py-3 rounded-xl" style="background:#F97316">View My Orders</button>
+      </div>
+    </div>`;
+}
+
+// ─── REFUND POLICY MODAL ──────────────────────────────────────────
+function openRefundModal()  { document.getElementById('refund-modal').style.display  = 'block'; }
+function closeRefundModal() { document.getElementById('refund-modal').style.display  = 'none';  }
+
+// ─── MODAL DISPLAY HELPER (store/review/upgrade) ──────────────────
+document.querySelectorAll('#store-edit-modal,#review-modal,#upgrade-modal').forEach(m=>{
+  m.style.display='none';
+  const obs = new MutationObserver(()=>{
+    m.style.display = m.classList.contains('open') ? 'block' : 'none';
+  });
+  obs.observe(m,{attributes:true,attributeFilter:['class']});
+});
+
+// ─── AUTH STATE ───────────────────────────────────────────────────
+let authTab = 'signup'; // 'signup' | 'signin' | 'reset'
+let pendingAuthAction = null;
+
+function getUser() {
+  try { return JSON.parse(localStorage.getItem('pasampo_user') || 'null'); }
+  catch(e) { return null; }
+}
+function saveUser(u) { localStorage.setItem('pasampo_user', JSON.stringify(u)); }
+async function signOut() {
+  try {
+    if (window.PasampoFirebaseAuth?.ready) await window.PasampoFirebaseAuth.signOut();
+  } catch(e) {
+    console.warn('Firebase sign out failed:', e);
+  }
+  localStorage.removeItem('pasampo_user');
+  renderAuthBtn();
+}
+
+function friendlyAuthError(error) {
+  const code = error?.code || '';
+  if (code.includes('email-already-in-use')) return 'That email is already registered. Try signing in instead.';
+  if (code.includes('invalid-email')) return 'Please enter a valid email address.';
+  if (code.includes('weak-password')) return 'Password is too weak. Use at least 6 characters.';
+  if (code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')) return 'Email or password is incorrect.';
+  if (code.includes('popup-closed-by-user')) return 'Sign-in was cancelled before completion.';
+  if (code.includes('operation-not-allowed')) return 'This sign-in provider is not enabled in Firebase yet.';
+  if (code.includes('unauthorized-domain')) return 'This domain is not authorized in Firebase. Add localhost or your hosted domain under Authentication settings.';
+  return error?.message || 'Authentication failed. Please try again.';
+}
+
+function requireAuth(page, param) {
+  if (getUser()) return true;
+  pendingAuthAction = { page, param: param || null };
+  openAuthModal('signup');
+  const label =
+    page === 'sell' ? 'start selling' :
+    page === 'verify' ? 'submit verification documents' :
+    page === 'map' ? 'view the Lusaka dispatch map' :
+    page === 'inbox' ? 'open your inbox' :
+    'continue';
+  setTimeout(() => {
+    const body = document.getElementById('auth-body');
+    if (body) {
+      body.insertAdjacentHTML('afterbegin', `
+        <div class="bg-orange-50 border border-orange-100 rounded-2xl p-3 mb-4 text-sm text-orange-800">
+          Create your Pasampo profile first, then you can ${label}. You can still browse listings publicly while your account gets set up.
+        </div>`);
+    }
+  }, 0);
+  return false;
+}
+
+function completePendingAuthAction() {
+  const next = pendingAuthAction;
+  pendingAuthAction = null;
+  if (next?.becomeSeller) {
+    becomeSeller();
+    return;
+  }
+  if (next?.messageProductId) {
+    openMessage(next.messageProductId);
+    return;
+  }
+  if (next) navigate(next.page, next.param);
+}
+
+function becomeSeller() {
+  if (!getUser()) {
+    pendingAuthAction = { becomeSeller: true };
+    openAuthModal('signup');
+    setTimeout(() => {
+      const body = document.getElementById('auth-body');
+      if (body) {
+        body.insertAdjacentHTML('afterbegin', `
+          <div class="bg-orange-50 border border-orange-100 rounded-2xl p-3 mb-4 text-sm text-orange-800">
+            Create your Pasampo profile first, then your seller store will be activated.
+          </div>`);
+      }
+    }, 0);
+    return;
+  }
+  const ss = getStoreSettings();
+  ss.isSeller = true;
+  saveStoreSettings(ss);
+  renderAuthBtn();
+  showToast('🏪 Seller tools activated. Your store is ready.');
+  navigate('store');
+}
+
+function renderAuthBtn() {
+  const user = getUser();
+  const ss = getStoreSettings();
+  const isSeller = !!ss.isSeller;
+  const area = document.getElementById('auth-btn-area');
+  if (!area) return;
+  if (user) {
+    area.innerHTML = `
+      <div class="relative hidden md:block" id="user-menu-wrap">
+        <button onclick="toggleUserMenu()"
+          class="flex items-center gap-2 border-2 border-gray-200 rounded-xl px-3 py-2 hover:border-[#F97316] transition-colors text-sm font-semibold text-gray-700">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:#F97316">
+            ${user.name.charAt(0).toUpperCase()}
+          </div>
+          ${user.name.split(' ')[0]}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div id="user-dropdown" class="hidden absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 w-48 z-50">
+          <div class="px-3 py-2 border-b border-gray-100 mb-1">
+            <p class="font-semibold text-sm text-gray-900">${user.name}</p>
+            <p class="text-xs text-gray-400">${user.email || user.phone}</p>
+            ${user.verificationStatus === 'pending' ? '<p class="text-[11px] text-amber-600 font-semibold mt-1">Verification pending: 1-24 hrs</p>' : ''}
+            ${user.verificationStatus === 'verified' ? '<p class="text-[11px] text-green-600 font-semibold mt-1">Verified seller</p>' : ''}
+          </div>
+          <div data-nav="inbox" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 text-sm text-gray-700 cursor-pointer" onclick="closeUserMenu()">
+            💬 Inbox
+            <span id="inbox-badge" class="hidden ml-auto w-4 h-4 text-white text-[9px] font-bold rounded-full items-center justify-center" style="background:#F97316">!</span>
+          </div>
+          <div data-nav="map" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 text-sm text-gray-700 cursor-pointer" onclick="closeUserMenu()">🗺️ Lusaka Map</div>
+          ${isSeller
+            ? '<div data-nav="store" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 text-sm text-gray-700 cursor-pointer" onclick="closeUserMenu()">🏪 My Store</div>'
+            : '<div onclick="becomeSeller();closeUserMenu();" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-orange-50 text-sm text-[#F97316] font-semibold cursor-pointer">🏪 Become a Seller</div>'
+          }
+          <div data-nav="verify" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 text-sm text-gray-700 cursor-pointer" onclick="closeUserMenu()">🛡️ Verify ID</div>
+          <div data-nav="sell" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 text-sm text-gray-700 cursor-pointer" onclick="closeUserMenu()">➕ Sell Now</div>
+          <div class="border-t border-gray-100 mt-1 pt-1">
+            <button onclick="signOut();closeUserMenu();" class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-red-50 text-sm text-red-500 w-full text-left">↩ Sign Out</button>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    area.innerHTML = `
+      <button onclick="openAuthModal('signup')" class="hidden md:flex items-center gap-1.5 text-sm font-semibold border-2 px-3 py-2 rounded-xl transition-colors hover:bg-orange-50" style="border-color:#F97316;color:#F97316">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Sign Up
+      </button>`;
+  }
+}
+
+function toggleUserMenu() {
+  document.getElementById('user-dropdown')?.classList.toggle('hidden');
+}
+function closeUserMenu() {
+  document.getElementById('user-dropdown')?.classList.add('hidden');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#user-menu-wrap')) closeUserMenu();
+});
+
+// ─── AUTH MODAL ───────────────────────────────────────────────────
+function openAuthModal(tab) {
+  authTab = tab || 'signup';
+  document.getElementById('auth-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  renderAuthForm();
+}
+function closeAuthModal() {
+  document.getElementById('auth-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function switchAuthTab(tab) {
+  authTab = tab;
+  ['signup','signin'].forEach(t => {
+    const btn = document.getElementById('tab-'+t);
+    if (!btn) return;
+    btn.style.borderColor = t===tab ? '#F97316' : 'transparent';
+    btn.style.color       = t===tab ? '#F97316' : '#9ca3af';
+  });
+  renderAuthForm();
+}
+
+function renderAuthForm() {
+  const el = document.getElementById('auth-body');
+  if (!el) return;
+
+  if (authTab === 'signup') {
+    el.innerHTML = `
+      <p class="text-gray-500 text-sm mb-5 text-center">Join 3,200+ verified Zambian sellers and buyers</p>
+      <div class="grid grid-cols-1 gap-2 mb-5">
+        <button onclick="socialSignUp('Google')" class="auth-provider-btn">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
+            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.4 39.6 16.1 44 24 44z"/>
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.1 5.6l6.2 5.2C36.9 39.3 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+          </svg>
+          Continue with Google
+        </button>
+      </div>
+      <div class="flex items-center gap-3 mb-5">
+        <div class="h-px bg-gray-200 flex-1"></div>
+        <span class="text-xs text-gray-400 font-semibold">or use your details</span>
+        <div class="h-px bg-gray-200 flex-1"></div>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Full Name *</label>
+          <input id="au-name" type="text" placeholder="e.g. Chanda Mwale" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Phone Number *</label>
+          <div class="flex">
+            <span class="flex items-center bg-gray-100 border-2 border-r-0 border-gray-200 rounded-l-xl px-3 text-sm text-gray-600 font-medium">+260</span>
+            <input id="au-phone" type="tel" maxlength="9" placeholder="97XXXXXXX" class="flex-1 border-2 border-l-0 border-gray-200 rounded-r-xl px-4 py-3 text-sm" style="outline:none" />
+          </div>
+          <p class="text-xs text-gray-400 mt-1">Used for delivery updates and Mobile Money contact. You will sign in with email.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email Address *</label>
+          <input id="au-email" type="email" placeholder="you@email.com" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm" />
+          <p class="text-xs text-gray-400 mt-1">Required for receipts, password reset, verification updates, and refund notices.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Create Password *</label>
+          <input id="au-pass" type="password" placeholder="At least 6 characters" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm" />
+        </div>
+        <div class="flex items-start gap-2 pt-1">
+          <input id="au-terms" type="checkbox" class="mt-0.5 w-4 h-4 shrink-0" style="accent-color:#F97316" />
+          <label for="au-terms" class="text-xs text-gray-500 cursor-pointer">
+            I agree to Pasampo's <span class="text-[#F97316] font-semibold cursor-pointer" onclick="openRefundModal()">Consumer Rights Policy</span> and Terms of Service. I understand my rights under the Zambia ECT Act and CCPA.
+          </label>
+        </div>
+        <div id="au-error" class="text-red-500 text-sm hidden"></div>
+        <button onclick="doSignUp()" class="w-full text-white font-bold py-4 rounded-xl transition-colors" style="background:#F97316">
+          Create Account →
+        </button>
+        <p class="text-center text-xs text-gray-400">Already have an account?
+          <span onclick="switchAuthTab('signin')" class="font-semibold cursor-pointer" style="color:#F97316">Sign In</span>
+        </p>
+      </div>`;
+  } else {
+    if (authTab === 'reset') {
+      el.innerHTML = `
+        <p class="text-gray-500 text-sm mb-5 text-center">Enter your email and we will simulate a secure reset link.</p>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email Address *</label>
+            <input id="reset-email" type="email" placeholder="you@email.com" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm" />
+          </div>
+          <div id="reset-error" class="text-red-500 text-sm hidden"></div>
+          <button onclick="sendPasswordReset()" class="w-full text-white font-bold py-4 rounded-xl" style="background:#F97316">Send Reset Link →</button>
+          <button onclick="switchAuthTab('signin')" class="w-full border-2 border-gray-200 text-gray-700 font-bold py-3 rounded-xl">Back to Sign In</button>
+        </div>`;
+      return;
+    }
+    el.innerHTML = `
+      <p class="text-gray-500 text-sm mb-5 text-center">Welcome back to Pasampo</p>
+      <div class="grid grid-cols-1 gap-2 mb-5">
+        <button onclick="socialSignUp('Google')" class="auth-provider-btn">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
+            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.4 39.6 16.1 44 24 44z"/>
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.1 5.6l6.2 5.2C36.9 39.3 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+          </svg>
+          Continue with Google
+        </button>
+      </div>
+      <div class="flex items-center gap-3 mb-5">
+        <div class="h-px bg-gray-200 flex-1"></div>
+        <span class="text-xs text-gray-400 font-semibold">or sign in with email</span>
+        <div class="h-px bg-gray-200 flex-1"></div>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email Address *</label>
+          <input id="si-email" type="email" placeholder="you@email.com" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Password *</label>
+          <input id="si-pass" type="password" placeholder="Your password" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm" />
+          <div class="text-right mt-2">
+            <button onclick="authTab='reset';renderAuthForm();" class="text-xs font-semibold hover:underline" style="color:#F97316">Forgot password?</button>
+          </div>
+        </div>
+        <div id="si-error" class="text-red-500 text-sm hidden"></div>
+        <button onclick="doSignIn()" class="w-full text-white font-bold py-4 rounded-xl" style="background:#F97316">
+          Sign In →
+        </button>
+        <p class="text-center text-xs text-gray-400">New to Pasampo?
+          <span onclick="switchAuthTab('signup')" class="font-semibold cursor-pointer" style="color:#F97316">Create an account</span>
+        </p>
+      </div>`;
+  }
+}
+
+async function doSignUp() {
+  const name  = (document.getElementById('au-name') ||{}).value?.trim();
+  const phone = (document.getElementById('au-phone')||{}).value?.trim();
+  const email = (document.getElementById('au-email')||{}).value?.trim();
+  const pass  = (document.getElementById('au-pass') ||{}).value;
+  const terms = (document.getElementById('au-terms')||{}).checked;
+  const err   = document.getElementById('au-error');
+  const showErr = msg => { err.textContent=msg; err.classList.remove('hidden'); };
+
+  if (!name)             return showErr('Please enter your full name.');
+  if (!phone||phone.length<9) return showErr('Please enter a valid 9-digit phone number.');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Please enter a valid email address.');
+  if (!pass||pass.length<6)   return showErr('Password must be at least 6 characters.');
+  if (!terms)            return showErr('Please agree to the Terms & Consumer Rights Policy.');
+  if (!window.PasampoFirebaseAuth?.ready) return showErr('Firebase is still loading. Open this page through localhost or hosting, then try again.');
+
+  try {
+    const user = await window.PasampoFirebaseAuth.signUp({ name, phone, email, password: pass });
+    saveUser(user);
+    closeAuthModal();
+    renderAuthBtn();
+    showToast('🎉 Welcome to Pasampo, ' + name.split(' ')[0] + '! Your Firebase account is ready.');
+    completePendingAuthAction();
+  } catch(error) {
+    showErr(friendlyAuthError(error));
+  }
+}
+
+async function doSignIn() {
+  const email = (document.getElementById('si-email')||{}).value?.trim();
+  const pass  = (document.getElementById('si-pass') ||{}).value;
+  const err   = document.getElementById('si-error');
+  const showErr = msg => { err.textContent=msg; err.classList.remove('hidden'); };
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Please enter a valid email address.');
+  if (!pass)                  return showErr('Please enter your password.');
+  if (!window.PasampoFirebaseAuth?.ready) return showErr('Firebase is still loading. Open this page through localhost or hosting, then try again.');
+
+  try {
+    const user = await window.PasampoFirebaseAuth.signIn({ email, password: pass });
+    const existing = getUser();
+    saveUser({ ...(existing || {}), ...user, verificationStatus: existing?.verificationStatus || user.verificationStatus || 'not_started' });
+    closeAuthModal();
+    renderAuthBtn();
+    showToast('👋 Welcome back, ' + user.name.split(' ')[0] + '!');
+    completePendingAuthAction();
+  } catch(error) {
+    showErr(friendlyAuthError(error));
+  }
+}
+
+async function socialSignUp(provider) {
+  if (!window.PasampoFirebaseAuth?.ready) {
+    showToast('Firebase is still loading. Open this page through localhost or hosting, then try again.');
+    return;
+  }
+  try {
+    const user = await window.PasampoFirebaseAuth.social(provider);
+    const existing = getUser();
+    saveUser({ ...(existing || {}), ...user, verificationStatus: existing?.verificationStatus || 'not_started' });
+    closeAuthModal();
+    renderAuthBtn();
+    showToast('✅ Signed in with ' + provider + '. Profile created.');
+    completePendingAuthAction();
+  } catch(error) {
+    const err = document.getElementById('au-error') || document.getElementById('si-error');
+    if (err) {
+      err.textContent = friendlyAuthError(error);
+      err.classList.remove('hidden');
+    } else {
+      showToast(friendlyAuthError(error));
+    }
+  }
+}
+
+async function sendPasswordReset() {
+  const email = (document.getElementById('reset-email')||{}).value?.trim();
+  const err = document.getElementById('reset-error');
+  const showErr = msg => { err.textContent=msg; err.classList.remove('hidden'); };
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Please enter a valid email address.');
+  if (!window.PasampoFirebaseAuth?.ready) return showErr('Firebase is still loading. Open this page through localhost or hosting, then try again.');
+  try {
+    await window.PasampoFirebaseAuth.resetPassword(email);
+    closeAuthModal();
+    showToast('📩 Firebase password reset link sent to ' + email + '.');
+  } catch(error) {
+    showErr(friendlyAuthError(error));
+  }
+}
+
+// ─── TOAST NOTIFICATION ───────────────────────────────────────────
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'fixed bottom-6 left-1/2 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-2xl z-50 text-center';
+  t.style.cssText = 'background:#0F172A;transform:translateX(-50%);min-width:260px;animation:fadeIn .3s ease';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+</script>
+
+<!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+<footer class="text-gray-400 mt-12" style="background:#0F172A">
+  <div class="max-w-7xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
+    <div class="col-span-2 md:col-span-1">
+      <div class="flex items-center gap-2 mb-3">
+        <img src="assets/pasampo-logo.png" alt="Pasampo" class="brand-logo-sm" />
+        <span class="text-white font-bold text-lg">Pasampo</span>
+      </div>
+      <p class="text-sm leading-relaxed">Zambia's smart marketplace. Sell more. Reach more. Every seller verified.</p>
+    </div>
+    <div>
+      <h4 class="text-white font-semibold mb-3 text-sm">Marketplace</h4>
+      <ul class="space-y-2 text-sm">
+        <li><span data-nav="browse" class="hover:text-[#F97316] transition-colors cursor-pointer">Browse Listings</span></li>
+        <li><span data-nav="sell" class="hover:text-[#F97316] transition-colors cursor-pointer">Sell an Item</span></li>
+        <li><span onclick="becomeSeller()" class="hover:text-[#F97316] transition-colors cursor-pointer">Become a Seller</span></li>
+        <li><span data-nav="verify" class="hover:text-[#F97316] transition-colors cursor-pointer">Verify Account</span></li>
+      </ul>
+    </div>
+    <div>
+      <h4 class="text-white font-semibold mb-3 text-sm">Help</h4>
+      <ul class="space-y-2 text-sm">
+        <li><span class="hover:text-[#F97316] cursor-pointer transition-colors">How It Works</span></li>
+        <li><span class="hover:text-[#F97316] cursor-pointer transition-colors">Delivery Info</span></li>
+        <li><span class="hover:text-[#F97316] cursor-pointer transition-colors">Fees &amp; Pricing</span></li>
+        <li><span class="hover:text-[#F97316] cursor-pointer transition-colors">Safety Tips</span></li>
+      </ul>
+    </div>
+    <div>
+      <h4 class="text-white font-semibold mb-3 text-sm">Company</h4>
+      <ul class="space-y-2 text-sm">
+        <li><span class="hover:text-[#F97316] cursor-pointer transition-colors">About Pasampo</span></li>
+        <li><span class="hover:text-[#F97316] cursor-pointer transition-colors">Partner with Us</span></li>
+        <li><span class="hover:text-[#F97316] cursor-pointer transition-colors">Biker Registration</span></li>
+        <li><span class="hover:text-[#F97316] cursor-pointer transition-colors">Privacy Policy</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="border-t py-4 px-4 text-center text-xs" style="border-color:rgba(255,255,255,.1)">
+    © 2024 Pasampo Ltd. Registered in Zambia. All transactions incur a $1 platform fee. Seller identity verified via NRC/Passport.
+  </div>
+</footer>
+
+<!-- ═══════════════════════════ JAVASCRIPT ═══════════════════════════ -->
+<script>
+// ─── DATA ──────────────────────────────────────────────────────
+const PRODUCTS = [
+  {id:1,title:"Samsung Galaxy A54 5G – Excellent Condition",price:2800,origPrice:3200,cat:"phones",cond:"Used – Like New",loc:"Lusaka, Woodlands",store:"TechHub Lusaka",storeId:"s1",verified:true,rating:4.8,reviews:43,views:87,posted:"2 hours ago",desc:"Samsung Galaxy A54 5G, 256GB storage, 8GB RAM. Comes with original box, charger and 2 screen protectors. No scratches, battery at 96%. Selling because I upgraded.",prev:{low:2400,high:3100,avg:2750}},
+  {id:2,title:"iPhone 13 – 128GB – Midnight Black",price:8500,origPrice:null,cat:"phones",cond:"Used – Good",loc:"Lusaka, Kabulonga",store:"Apple Corner ZM",storeId:"s2",verified:true,rating:4.9,reviews:112,views:203,posted:"5 hours ago",desc:"iPhone 13, 128GB. Battery health 89%. Minor scratches on the back, screen perfect. Comes with cable only.",prev:{low:7800,high:9500,avg:8600}},
+  {id:3,title:"Toyota Vitz 2019 – 1.0L – Full Options",price:89000,origPrice:null,cat:"cars",cond:"Used – Good",loc:"Lusaka, Chilenje",store:"Lusaka Auto Deals",storeId:"s3",verified:true,rating:4.6,reviews:28,views:541,posted:"1 day ago",desc:"Toyota Vitz 2019, 1.0L petrol, automatic. 48,000km. Single owner, full service history. No accidents. Reverse camera, alloy wheels.",prev:{low:80000,high:100000,avg:88000}},
+  {id:4,title:"Nike Air Max 270 – Size 43 – Brand New",price:680,origPrice:850,cat:"shoes",cond:"New",loc:"Lusaka, Arcades",store:"Sneaker World ZM",storeId:"s4",verified:true,rating:4.7,reviews:67,views:129,posted:"3 hours ago",desc:"Brand new Nike Air Max 270 in original box. Size EU 43 / UK 9. White/Black colourway. Imported from Dubai.",prev:{low:550,high:800,avg:670}},
+  {id:5,title:"PlayStation 5 – Disc Edition + 2 Controllers",price:6500,origPrice:7200,cat:"electronics",cond:"Used – Like New",loc:"Lusaka, Roma",store:"TechHub Lusaka",storeId:"s1",verified:true,rating:4.8,reviews:43,views:318,posted:"6 hours ago",desc:"PS5 disc edition, 2 DualSense controllers, 6 games included. Purchased Dec 2023. Perfect condition.",prev:{low:5800,high:7000,avg:6400}},
+  {id:6,title:"LG 2-Door Fridge Freezer – 250L",price:4200,origPrice:null,cat:"appliances",cond:"Used – Good",loc:"Lusaka, Libala",store:"Home Essentials ZM",storeId:"s5",verified:false,rating:4.2,reviews:12,views:194,posted:"2 days ago",desc:"LG fridge freezer, 250L. Works perfectly, no dents. Moving abroad so must sell. 3 years old.",prev:{low:3500,high:5000,avg:4200}},
+  {id:7,title:"MacBook Pro M1 – 8GB/256GB – Space Grey",price:12500,origPrice:null,cat:"electronics",cond:"Used – Like New",loc:"Lusaka, Northmead",store:"MacStore Zambia",storeId:"s6",verified:true,rating:5.0,reviews:89,views:412,posted:"4 hours ago",desc:"MacBook Pro M1 2020, 8GB RAM, 256GB SSD. Battery cycles: 142. Original charger and box. Excellent condition.",prev:{low:11000,high:14000,avg:12500}},
+  {id:8,title:"Leather 3-Piece Sofa Set – Brown",price:3800,origPrice:5000,cat:"home",cond:"Used – Good",loc:"Lusaka, Emmasdale",store:"Lusaka Furniture Mart",storeId:"s7",verified:true,rating:4.5,reviews:21,views:267,posted:"3 days ago",desc:"Brown leather 3+2+1 sofa set. 2 years old, minor wear on armrests. Very comfortable. Can deliver in Lusaka for K100.",prev:{low:3000,high:5500,avg:4000}},
+];
+
+const CATS = [
+  {id:"all",name:"All Items",icon:"🛍️",count:null},
+  {id:"phones",name:"Phones & Tablets",icon:"📱",count:1240},
+  {id:"cars",name:"Cars & Vehicles",icon:"🚗",count:890},
+  {id:"electronics",name:"Electronics",icon:"💻",count:2100},
+  {id:"shoes",name:"Shoes & Fashion",icon:"👟",count:3400},
+  {id:"home",name:"Home & Garden",icon:"🏠",count:780},
+  {id:"appliances",name:"Appliances",icon:"🏪",count:560},
+  {id:"sports",name:"Sports & Fitness",icon:"⚽",count:430},
+  {id:"kids",name:"Kids & Baby",icon:"🧸",count:310},
+];
+
+const PREVAILING = {
+  phones:{low:800,high:12000,avg:3200,trend:"stable"},
+  cars:{low:25000,high:200000,avg:78000,trend:"up"},
+  electronics:{low:500,high:20000,avg:4500,trend:"down"},
+  shoes:{low:150,high:1500,avg:480,trend:"up"},
+  home:{low:200,high:8000,avg:2200,trend:"stable"},
+  appliances:{low:800,high:12000,avg:3800,trend:"stable"},
+};
+
+const CATBG = window.CATBG = {phones:"#eff6ff",cars:"#f1f5f9",electronics:"#faf5ff",shoes:"#fdf2f8",home:"#f0fdf4",appliances:"#fefce8",sports:"#fff7ed",kids:"#fdf4ff"};
+const CATEMU = window.CATEMU = {phones:"📱",cars:"🚗",electronics:"💻",shoes:"👟",home:"🏠",appliances:"🏪",sports:"⚽",kids:"🧸"};
+
+// ─── TIER CONSTANTS ──────────────────────────────────────────────
+const FREE_LIMIT = 5;
+const PREMIUM_LIMIT = 30;
+const PREMIUM_PRICE_K = 500;
+
+// ─── REVIEWS DATA ────────────────────────────────────────────────
+const REVIEWS = {
+  s1:[
+    {name:"Mwape K.",rating:5,text:"Fast delivery and exactly as described. Very professional seller.",date:"2 weeks ago",avatar:"M"},
+    {name:"Bwalya M.",rating:4,text:"Good seller, slight delay on dispatch but communicated well throughout.",date:"1 month ago",avatar:"B"},
+    {name:"Thandie N.",rating:5,text:"iPhone was in perfect condition. Would definitely buy again!",date:"3 weeks ago",avatar:"T"},
+    {name:"Kaputo J.",rating:5,text:"Genuine products, quick response, smooth transaction. Highly recommended.",date:"5 days ago",avatar:"K"},
+  ],
+  s2:[
+    {name:"Nsansa P.",rating:5,text:"Best Apple dealer in Lusaka. Legit products, fast.",date:"1 week ago",avatar:"N"},
+    {name:"Mulenga C.",rating:4,text:"Great service but packaging could be better.",date:"2 weeks ago",avatar:"M"},
+  ],
+};
+
+// ─── STORE SETTINGS (persisted to localStorage) ──────────────────
+function getStoreSettings() {
+  const defaults = {
+    name: 'TechHub Lusaka',
+    catchphrase: 'Your go-to tech store in Lusaka 🛍️',
+    bio: 'We sell genuine phones, laptops and accessories. Every item tested before listing.',
+    color: '#F97316',
+    plan: 'free',
+    listingCount: 2,
+    isSeller: false,
+  };
+  try { return Object.assign({}, defaults, JSON.parse(localStorage.getItem('pasampo_store') || '{}')); }
+  catch(e) { return defaults; }
+}
+function saveStoreSettings(s) { localStorage.setItem('pasampo_store', JSON.stringify(s)); }
+
+// ─── STATE ──────────────────────────────────────────────────────
+let currentPage = 'home';
+let currentProduct = 1;
+let browseCat = 'all';
+let sellStep = 1; let sellCat = ''; let sellPrice = 0; let sellDelivery = 'both'; let sellCondition = '';
+let kycStep = 1; let kycIdType = null; let kycFront = false; let kycBack = false; let kycSelfie = false; let kycAgreed = false;
+
+// ─── NAVIGATION ──────────────────────────────────────────────────
+function navigate(page, param) {
+  if ((page === 'sell' || page === 'verify' || page === 'map' || page === 'inbox') && !requireAuth(page, param)) return;
+  if (page === 'sell') {
+    const ss = getStoreSettings();
+    if (!ss.isSeller) {
+      ss.isSeller = true;
+      saveStoreSettings(ss);
+      renderAuthBtn();
+      showToast('🏪 Seller tools activated. You can now manage My Store.');
+    }
+  }
+  const previousPage = currentPage;
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (!el) return;
+  el.classList.add('active');
+  window.scrollTo(0,0);
+  // Destroy sell map when leaving sell page
+  if (previousPage === 'sell' && page !== 'sell') destroySellMap();
+  if (page === 'home')    renderHomeLists();
+  if (page === 'browse')  { if (param) browseCat = param; renderBrowseCats(); renderBrowseGrid(); }
+  if (page === 'product') { if (param) currentProduct = param; renderProduct(); }
+  if (page === 'sell')    { sellStep = 1; renderSellQuota(); renderSell(); }
+  if (page === 'verify')  { kycStep = 1; renderKyc(); }
+  if (page === 'store')   renderStore();
+  if (page === 'map')     setTimeout(initMainMap, 80);
+  if (page === 'inbox')   renderInbox();
+}
+
+// wire up all data-nav clicks
+document.addEventListener('click', function(e) {
+  const el = e.target.closest('[data-nav]');
+  if (!el) return;
+  const page = el.getAttribute('data-nav');
+  const cat = el.getAttribute('data-cat');
+  navigate(page, cat || null);
+});
+
+function toggleMenu() {
+  const m = document.getElementById('mobile-menu');
+  m.classList.toggle('hidden');
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────
+function productCard(p, onclick) {
+  const disc = p.origPrice ? Math.round(((p.origPrice - p.price)/p.origPrice)*100) : null;
+  const bg   = CATBG[p.cat]  || '#f1f5f9';
+  const emu  = CATEMU[p.cat] || '📦';
+  return `<div class="bg-white rounded-2xl overflow-hidden card-hover cursor-pointer group" style="border:1px solid #f0f4f8;box-shadow:0 2px 8px rgba(0,0,0,.05)" onclick="${onclick}">
+    <div class="relative h-44 overflow-hidden flex items-center justify-center" style="background:${bg}">
+      <span class="prod-img text-6xl select-none">${emu}</span>
+      ${disc ? `<div class="absolute top-2.5 left-2.5"><span class="text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm" style="background:linear-gradient(135deg,#ef4444,#dc2626)">-${disc}%</span></div>` : ''}
+      <div class="absolute top-2.5 right-2.5 flex items-center gap-1 bg-white/90 text-gray-500 text-xs px-2 py-0.5 rounded-full shadow-sm">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        ${p.views}
+      </div>
+    </div>
+    <div class="p-3.5">
+      <span class="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1.5" style="background:#f1f5f9;color:#64748b">${p.cond}</span>
+      <h3 class="font-semibold text-sm text-gray-900 lc2 leading-snug mb-2.5">${p.title}</h3>
+      <div class="flex items-baseline gap-2 mb-2">
+        <span class="text-lg font-black" style="color:#F97316">K ${p.price.toLocaleString()}</span>
+        ${p.origPrice ? `<span class="text-xs text-gray-400 line-through font-medium">K ${p.origPrice.toLocaleString()}</span>` : ''}
+      </div>
+      <div class="flex items-center gap-1 text-xs text-gray-400 mb-2.5">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span class="truncate">${p.loc}</span>
+      </div>
+      <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid #f8fafc">
+        <span>${p.verified ? '<span class="badge-v">✓ Verified</span>' : '<span class="text-[10px] text-gray-400">Unverified</span>'}</span>
+        <div class="flex items-center gap-0.5 text-xs">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="#f59e0b" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span class="font-semibold text-gray-700">${p.rating}</span>
+        </div>
+      </div>
+      <p class="text-[10px] text-gray-400 mt-1 truncate">${p.posted} · ${p.store}</p>
+    </div>
+  </div>`;
+}
+
+// ─── HOME ────────────────────────────────────────────────────────
+function renderHomeLists() {
+  const latest = PRODUCTS.slice(0,4);
+  const trending = PRODUCTS.slice(2,6);
+  document.getElementById('home-latest').innerHTML = latest.map(p => productCard(p, `navigate('product',${p.id})`)).join('');
+  document.getElementById('home-trending').innerHTML = trending.map(p => productCard(p, `navigate('product',${p.id})`)).join('');
+}
+
+function heroTab(cat) {
+  document.querySelectorAll('#hero-tabs button').forEach(b => {
+    if (b.dataset.cat === cat) { b.className = b.className.replace('tab-inactive','tab-active'); }
+    else { b.className = b.className.replace('tab-active','tab-inactive'); }
+  });
+}
+
+function doHeroSearch() {
+  navigate('browse', null);
+  const q = document.getElementById('hero-search').value;
+  setTimeout(() => { if (q) { document.getElementById('browse-search').value = q; renderBrowseGrid(); } }, 50);
+}
+
+// ─── BROWSE ──────────────────────────────────────────────────────
+function renderBrowseCats() {
+  const html = CATS.map(c => `
+    <button onclick="browseCat='${c.id}';renderBrowseCats();renderBrowseGrid();"
+      class="w-full text-left text-sm px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${browseCat===c.id?'font-semibold text-white':'text-gray-700 hover:bg-gray-50'}"
+      style="${browseCat===c.id?'background:#F97316':''}">
+      <span>${c.icon} ${c.name}</span>
+      ${c.count ? `<span class="text-xs opacity-60">${c.count.toLocaleString()}</span>` : ''}
+    </button>`).join('');
+  document.getElementById('browse-cats').innerHTML = html;
+}
+
+function renderBrowseGrid() {
+  const search = (document.getElementById('browse-search')||{value:''}).value.toLowerCase();
+  const sort = (document.getElementById('browse-sort')||{value:'newest'}).value;
+  let list = PRODUCTS.filter(p => {
+    const matchCat = browseCat === 'all' || p.cat === browseCat;
+    const matchSearch = !search || p.title.toLowerCase().includes(search) || p.loc.toLowerCase().includes(search);
+    return matchCat && matchSearch;
+  });
+  if (sort === 'price-asc') list.sort((a,b) => a.price - b.price);
+  else if (sort === 'price-desc') list.sort((a,b) => b.price - a.price);
+  else if (sort === 'views') list.sort((a,b) => b.views - a.views);
+  const count = document.getElementById('browse-count');
+  if (count) count.textContent = `${list.length} listing${list.length !== 1 ? 's' : ''} found`;
+  const grid = document.getElementById('browse-grid');
+  if (!grid) return;
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="col-span-3 text-center py-16 text-gray-400"><div class="text-5xl mb-3">🔍</div><p class="font-medium">No listings found.</p><button onclick="browseCat='all';document.getElementById('browse-search').value='';renderBrowseCats();renderBrowseGrid();" class="mt-3 text-sm hover:underline" style="color:#F97316">Clear filters</button></div>`;
+  } else {
+    grid.innerHTML = list.map(p => productCard(p, `navigate('product',${p.id})`)).join('');
+  }
+}
+
+// ─── PRODUCT ─────────────────────────────────────────────────────
+function renderProduct() {
+  const p = PRODUCTS.find(x => x.id === currentProduct);
+  if (!p) return;
+  const bg = CATBG[p.cat] || '#f1f5f9';
+  const emu = CATEMU[p.cat] || '📦';
+  const priceAbove = p.price > p.prev.avg;
+  const pct = Math.abs(Math.round(((p.price - p.prev.avg)/p.prev.avg)*100));
+  document.getElementById('product-content').innerHTML = `
+    <nav class="flex items-center gap-1.5 text-xs text-gray-500 mb-5">
+      <span data-nav="home" class="hover:text-[#F97316] cursor-pointer">Home</span> ›
+      <span data-nav="browse" class="hover:text-[#F97316] cursor-pointer">Browse</span> ›
+      <span class="text-gray-900 font-medium">${p.title}</span>
+    </nav>
+    <div class="grid md:grid-cols-2 gap-8">
+      <div>
+        <div class="rounded-2xl h-72 flex items-center justify-center text-8xl" style="background:${bg}">${emu}</div>
+        <div class="flex gap-2 mt-3">
+          ${[1,2,3].map(i=>`<div class="rounded-xl h-16 w-16 flex items-center justify-center text-2xl border-2 ${i===1?'border-[#F97316]':'border-transparent'}" style="background:${bg}">${emu}</div>`).join('')}
+        </div>
+        <p class="text-xs text-gray-500 mt-2">👁 ${p.views} people viewing · 🕐 Listed ${p.posted}</p>
+      </div>
+      <div>
+        <div class="flex gap-2 mb-2">
+          <span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full capitalize">${p.cat}</span>
+          <span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">${p.cond}</span>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 mb-3">${p.title}</h1>
+        <div class="flex items-baseline gap-3 mb-2">
+          <span class="text-3xl font-black" style="color:#F97316">K ${p.price.toLocaleString()}</span>
+          ${p.origPrice ? `<span class="text-lg text-gray-400 line-through">K ${p.origPrice.toLocaleString()}</span>` : ''}
+        </div>
+        <div class="flex items-center gap-2 text-sm px-3 py-2 rounded-xl mb-4 ${priceAbove?'bg-amber-50 text-amber-700':'bg-green-50 text-green-700'}">
+          ${priceAbove?'⚠️':'✅'}
+          ${priceAbove ? `${pct}% above market avg (K${p.prev.avg.toLocaleString()})` : `${pct}% below market avg — great deal!`}
+        </div>
+        <p class="text-sm text-gray-500 mb-4">📍 ${p.loc}</p>
+        <div class="bg-gray-50 rounded-xl p-4 mb-4">
+          <h3 class="font-semibold text-sm text-gray-900 mb-2">Description</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">${p.desc}</p>
+        </div>
+        <h3 class="font-semibold text-sm text-gray-900 mb-2">Delivery Options</h3>
+        <div class="space-y-2 mb-4">
+          <div class="flex items-start gap-3 bg-white border border-gray-200 rounded-xl p-3">
+            <span class="text-xl">🤝</span>
+            <div class="flex-1"><div class="font-semibold text-sm text-gray-900">Self Arrange / Pickup</div><div class="text-xs text-gray-500">Coordinate directly with the seller.</div></div>
+            <span class="text-sm font-bold text-green-600">Free</span>
+          </div>
+          <div class="flex items-start gap-3 rounded-xl p-3" style="background:#fff7ed;border:1px solid #fed7aa">
+            <span class="text-xl">🏍️</span>
+            <div class="flex-1"><div class="font-semibold text-sm text-gray-900">Pasampo Biker Delivery</div><div class="text-xs text-gray-500">Tracked within Lusaka · 2–4 hrs</div></div>
+            <span class="text-sm font-bold" style="color:#F97316">K80</span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2 mb-4">💡 A flat <strong>$1 platform fee</strong> applies to every completed sale.</p>
+        <div class="flex gap-3">
+          <button class="flex-1 text-white font-bold py-3.5 rounded-xl transition-colors" style="background:#F97316" onclick="openCheckoutModal(${p.id})">📦 Buy Now</button>
+          <button class="flex-1 border-2 border-gray-200 hover:border-[#F97316] text-gray-700 font-bold py-3.5 rounded-xl transition-colors" onclick="openMessage(${p.id})">💬 Message Seller</button>
+        </div>
+      </div>
+    </div>
+    <div class="mt-8 bg-white rounded-2xl border border-gray-100 p-5">
+      <h2 class="font-bold text-gray-900 mb-4">About the Seller</h2>
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl" style="background:rgba(249,115,22,.1)">🏪</div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-gray-900 cursor-pointer hover:text-[#F97316]" onclick="navigate('store')">${p.store}</span>
+            ${p.verified ? '<span class="badge-v">✓ Verified</span>' : ''}
+          </div>
+          <p class="text-sm text-gray-500 mt-0.5">⭐ ${p.rating} · ${p.reviews} reviews</p>
+        </div>
+        <span class="text-sm font-medium cursor-pointer hover:underline" style="color:#F97316" onclick="navigate('store')">View Store →</span>
+      </div>
+    </div>
+    <!-- Product reviews -->
+    <div class="mt-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-bold text-gray-900">Seller Reviews</h2>
+        <button onclick="openAddReview()" class="text-xs font-semibold px-3 py-1.5 rounded-xl border-2 hover:bg-orange-50 transition-colors" style="color:#F97316;border-color:#F97316">+ Review</button>
+      </div>
+      <div class="space-y-3">${(REVIEWS[p.storeId]||[]).slice(0,3).map(r=>reviewCard(r)).join('') || '<p class="text-sm text-gray-400 py-4 text-center">No reviews yet — be the first!</p>'}</div>
+    </div>
+    <div class="mt-5"><span data-nav="browse" class="text-sm text-gray-500 hover:text-[#F97316] cursor-pointer">← Back to listings</span></div>`;
+}
+
+// ─── SELL ─────────────────────────────────────────────────────────
+function renderSell() {
+  // Steps indicator
+  const steps = ['Details','Pricing','Delivery'];
+  document.getElementById('sell-steps').innerHTML = steps.map((s,i) => {
+    const n = i+1;
+    const cls = n < sellStep ? 'step-done' : n === sellStep ? 'step-active' : 'step-inactive';
+    return `<div class="flex items-center gap-2">${i>0?'<div class="h-px w-5 bg-gray-200 mx-1"></div>':''}<div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${cls}">${n < sellStep ? '✓' : n}</div><span class="text-xs hidden sm:block ${n<=sellStep?'text-gray-900 font-medium':'text-gray-400'}">${s}</span></div>`;
+  }).join('');
+  // Form
+  if (sellStep === 1) renderSellStep1();
+  if (sellStep === 2) renderSellStep2();
+  if (sellStep === 3) renderSellStep3();
+}
+
+function renderSellStep1() {
+  document.getElementById('sell-form').innerHTML = `
+    <div class="space-y-4 fade-in">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Category *</label>
+        <select id="s-cat" class="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-sm">
+          <option value="">Select a category…</option>
+          ${['phones','cars','electronics','shoes','home','appliances','sports','kids'].map(c => `<option value="${c}" ${sellCat===c?'selected':''}>${CATEMU[c]} ${CATS.find(x=>x.id===c)?.name||c}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Listing Title *</label>
+        <input id="s-title" type="text" maxlength="80" placeholder="e.g. iPhone 13 128GB – Black – Excellent Condition" class="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-sm" />
+        <p class="text-xs text-gray-400 mt-1" id="title-count">0/80 characters</p>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Condition *</label>
+        <div class="grid grid-cols-4 gap-2">
+          ${['New','Like New','Good','Fair'].map(c => `<button type="button" onclick="setSellCond('${c}')" id="cond-${c.replace(' ','-')}" class="py-2.5 text-sm rounded-xl border-2 font-medium transition-colors ${sellCondition===c?'border-[#F97316] bg-orange-50 text-[#F97316]':'border-gray-200 text-gray-600'}">${c}</button>`).join('')}
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Description *</label>
+        <textarea id="s-desc" rows="4" placeholder="Describe your item — specs, reason for selling, what's included…" class="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-sm resize-none"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Photos (up to 6)</label>
+        <!-- Real image upload -->
+        <div id="img-drop-zone" onclick="document.getElementById('img-file-input').click()"
+          class="border-2 border-dashed border-gray-300 rounded-2xl p-5 text-center cursor-pointer hover:border-[#F97316] hover:bg-orange-50 transition-colors">
+          <div class="text-3xl mb-2">📷</div>
+          <p class="text-sm text-gray-600 font-medium">Click to add photos</p>
+          <p class="text-xs text-gray-400 mt-1" id="img-count">0/6 photos added · JPG, PNG · max 5MB each</p>
+        </div>
+        <input id="img-file-input" type="file" accept="image/*" multiple class="hidden" onchange="handleImageUpload(event)" />
+        <!-- Thumbnail grid -->
+        <div id="img-previews" class="grid grid-cols-3 gap-2 mt-2"></div>
+      </div>
+      <button onclick="advanceSell()" class="w-full text-white font-bold py-4 rounded-xl transition-colors" style="background:#F97316">Continue to Pricing →</button>
+    </div>`;
+  const titleInput = document.getElementById('s-title');
+  if (titleInput) titleInput.addEventListener('input', function() {
+    document.getElementById('title-count').textContent = this.value.length + '/80 characters';
+  });
+}
+
+function setSellCond(c) {
+  sellCondition = c;
+  ['New','Like New','Good','Fair'].forEach(x => {
+    const btn = document.getElementById('cond-' + x.replace(' ','-'));
+    if (btn) btn.className = btn.className.replace(x===c ? 'border-gray-200 text-gray-600':'border-[#F97316] bg-orange-50 text-[#F97316]', x===c ? 'border-[#F97316] bg-orange-50 text-[#F97316]':'border-gray-200 text-gray-600');
+  });
+}
+
+function advanceSell() {
+  sellCat = (document.getElementById('s-cat')||{value:''}).value;
+  sellStep++;
+  renderSell();
+}
+
+function renderSellStep2() {
+  const pr = PREVAILING[sellCat];
+  document.getElementById('sell-form').innerHTML = `
+    <div class="space-y-4 fade-in">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Your Asking Price (K) *</label>
+        <div class="relative">
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-500">K</span>
+          <input id="s-price" type="number" min="1" value="${sellPrice||''}" oninput="updatePriceWidget()" placeholder="0" class="w-full pl-9 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl text-lg font-bold" />
+        </div>
+      </div>
+      <div id="price-widget">${pr ? '<div class="bg-orange-50 border border-orange-100 rounded-2xl p-4 text-sm text-gray-500">Enter a price to see market insight.</div>' : '<div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">ℹ️ Select a category in step 1 for live market pricing.</div>'}</div>
+      <div class="bg-gray-50 rounded-xl p-4 text-sm">
+        <p class="font-semibold text-gray-700 mb-1">Pasampo Fee</p>
+        <p class="text-gray-500 text-xs">A flat <strong>$1 USD</strong> fee is charged per completed sale — automatically deducted at checkout. No hidden charges.</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="sellStep--;renderSell();" class="flex-1 border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl">← Back</button>
+        <button onclick="sellPrice=Number(document.getElementById('s-price').value);sellStep++;renderSell();" class="flex-1 text-white font-bold py-4 rounded-xl" style="background:#F97316">Continue →</button>
+      </div>
+    </div>`;
+}
+
+function updatePriceWidget() {
+  const price = Number(document.getElementById('s-price').value);
+  const pr = PREVAILING[sellCat];
+  if (!pr || !price) return;
+  const pos = Math.min(100, Math.max(0, ((price - pr.low) / (pr.high - pr.low)) * 100));
+  const above = price > pr.avg;
+  const pct = Math.abs(Math.round(((price - pr.avg)/pr.avg)*100));
+  document.getElementById('price-widget').innerHTML = `
+    <div class="bg-orange-50 border border-orange-100 rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-sm font-semibold text-gray-800">Market Price Insight</span>
+        <span class="text-xs text-gray-400">ℹ️ Live data</span>
+      </div>
+      <div class="relative mb-1">
+        <div class="price-bar"></div>
+        <div class="price-dot" style="left:${pos}%"></div>
+      </div>
+      <div class="flex justify-between text-xs text-gray-500 mt-2 mb-3">
+        <span>K ${pr.low.toLocaleString()}</span>
+        <span class="font-semibold" style="color:#F97316">Avg K ${pr.avg.toLocaleString()}</span>
+        <span>K ${pr.high.toLocaleString()}</span>
+      </div>
+      <div class="rounded-xl px-3 py-2 text-sm flex items-center gap-2 ${above?'bg-amber-100 text-amber-800':'bg-green-100 text-green-800'}">
+        ${above ? '⚠️' : '✅'}
+        ${above ? `${pct}% above average. Consider lowering for faster sales.` : `Great price — ${pct}% below market average. Likely to sell faster.`}
+      </div>
+    </div>`;
+}
+
+function renderSellStep3() {
+  document.getElementById('sell-form').innerHTML = `
+    <div class="space-y-4 fade-in">
+      <h2 class="font-semibold text-gray-900">Choose Delivery Method</h2>
+      ${[
+        {id:'self',icon:'🤝',label:'Self Delivery / Pickup',desc:'Arrange delivery directly with the buyer. No delivery charge.',fee:'Free',fc:'text-green-600'},
+        {id:'biker',icon:'🏍️',label:'Pasampo Biker Network',desc:'Verified local biker. Tracked, 2–4 hrs. Biker earns 15%.',fee:'K80 (buyer pays)',fc:'text-[#F97316]'},
+        {id:'both',icon:'🔀',label:'Let Buyer Choose',desc:'Show both options to the buyer at checkout. Recommended.',fee:'Buyer decides',fc:'text-blue-600'},
+      ].map(o=>`
+        <div onclick="setSellDelivery('${o.id}')" id="deliv-${o.id}" class="flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${sellDelivery===o.id?'border-[#F97316] bg-orange-50':'border-gray-200 bg-white hover:border-gray-300'}">
+          <span class="text-2xl mt-0.5">${o.icon}</span>
+          <div class="flex-1"><div class="font-semibold text-sm text-gray-900">${o.label}</div><div class="text-xs text-gray-500 mt-0.5">${o.desc}</div></div>
+          <span class="text-sm font-bold ${o.fc} shrink-0">${o.fee}</span>
+        </div>`).join('')}
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">📍 Your Delivery Location *</label>
+        <!-- Quick hub buttons -->
+        <div class="grid grid-cols-3 gap-1.5 mb-2">
+          ${LUSAKA_HUBS.slice(0,6).map(h=>`
+            <button type="button" class="sell-hub-btn py-1.5 px-1 text-xs rounded-xl border-2 transition-colors font-medium"
+              data-hub="${h.id}" style="border-color:#e5e7eb;background:white"
+              onclick="pickSellHub('${h.id}')">${h.icon} ${h.name.split('/')[0].trim()}</button>
+          `).join('')}
+        </div>
+        <!-- Leaflet mini-map -->
+        <div id="sell-map" class="mb-2"></div>
+        <input id="sell-location-input" type="text" placeholder="Click a hub button or tap the map to set your location…"
+          class="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm" />
+        <p class="text-xs text-gray-400 mt-1">🗺️ Tap the map to drop a custom pin · Orange dashed circle = biker delivery zone</p>
+      </div>
+      <div class="rounded-xl px-3 py-2 text-xs text-orange-700" style="background:#fff7ed;border:1px solid #fed7aa">🛡️ Delivery instructions will be sent to the buyer after purchase.</div>
+      <div class="flex gap-3">
+        <button onclick="destroySellMap();sellStep--;renderSell();" class="flex-1 border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl">← Back</button>
+        <button onclick="submitListing()" class="flex-1 text-white font-bold py-4 rounded-xl" style="background:#F97316">Publish Listing 🚀</button>
+      </div>
+    </div>`;
+  // Init the mini-map after DOM is painted
+  setTimeout(initSellMap, 120);
+}
+
+function setSellDelivery(id) {
+  sellDelivery = id;
+  ['self','biker','both'].forEach(x => {
+    const el = document.getElementById('deliv-'+x);
+    if (!el) return;
+    el.className = el.className.replace(x===id?'border-gray-200 bg-white hover:border-gray-300':'border-[#F97316] bg-orange-50', x===id?'border-[#F97316] bg-orange-50':'border-gray-200 bg-white hover:border-gray-300');
+  });
+}
+
+function submitListing() {
+  // Persist the new listing to localStorage
+  const title = (document.getElementById('s-title')||{value:''}).value || sellCat + ' item';
+  const loc   = (document.getElementById('sell-location-input')||{value:'Lusaka'}).value || 'Lusaka';
+  const newListing = {
+    id: Date.now(),
+    title, price: sellPrice, cat: sellCat, cond: sellCondition,
+    loc, store:'My Store', storeId:'s1', verified: true, rating: 5.0,
+    reviews: 0, views: 0, posted:'Just now', origPrice: null,
+    desc:'', prev:{low:0,high:0,avg:0},
+    images: uploadedImages.map(i=>i.url),
+  };
+  const saved = getSavedListings();
+  saved.push(newListing);
+  localStorage.setItem('pasampo_listings', JSON.stringify(saved));
+  // Update store listing count
+  const ss = getStoreSettings(); ss.listingCount = (ss.listingCount||0)+1; saveStoreSettings(ss);
+  // Reset upload state
+  uploadedImages = [];
+  document.getElementById('sell-form').innerHTML = `
+    <div class="text-center py-8 fade-in">
+      <div class="text-6xl mb-4">🎉</div>
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Listing Submitted!</h2>
+      <p class="text-gray-500 mb-5">Your item is under review and will go live in a few minutes.</p>
+      <div class="bg-green-50 rounded-2xl p-4 mb-5 text-left space-y-2">
+        <div class="flex items-center gap-2 text-green-700 text-sm">✅ Identity verified</div>
+        <div class="flex items-center gap-2 text-green-700 text-sm">✅ Listing saved to your store</div>
+        <div class="flex items-center gap-2 text-amber-600 text-sm">⏳ Awaiting moderation (~2 min)</div>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="navigate('store')" class="flex-1 border-2 border-gray-200 text-gray-700 font-bold py-3 rounded-xl">View My Store</button>
+        <button onclick="sellStep=1;sellCat='';sellPrice=0;sellCondition='';uploadedImages=[];renderSell();" class="flex-1 text-white font-bold py-3 rounded-xl" style="background:#F97316">List Another</button>
+      </div>
+    </div>`;
+}
+
+// ─── KYC ─────────────────────────────────────────────────────────
+function renderKyc() {
+  const user = getUser();
+  if (!user) {
+    document.getElementById('kyc-steps').innerHTML = '';
+    document.getElementById('kyc-form').innerHTML = `
+      <div class="bg-white border border-gray-100 rounded-2xl p-6 text-center fade-in">
+        <div class="text-4xl mb-3">👤</div>
+        <h2 class="text-xl font-bold text-gray-900 mb-2">Create your profile first</h2>
+        <p class="text-sm text-gray-500 mb-5">You need a Pasampo account before submitting NRC or Passport documents. After signup, we will bring you straight back here.</p>
+        <button onclick="pendingAuthAction={page:'verify'};openAuthModal('signup')" class="w-full text-white font-bold py-4 rounded-xl" style="background:#F97316">Create Profile to Verify →</button>
+      </div>`;
+    return;
+  }
+  if (user.verificationStatus === 'pending') {
+    document.getElementById('kyc-steps').innerHTML = '';
+    document.getElementById('kyc-form').innerHTML = `
+      <div class="bg-white border border-amber-100 rounded-2xl p-6 text-center fade-in">
+        <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">⏳</div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Verification in Review</h2>
+        <p class="text-gray-500 mb-5">Thanks, ${user.name.split(' ')[0]}. Your documents have been submitted and are being checked by Pasampo compliance.</p>
+        <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-left text-sm text-amber-800 space-y-2 mb-5">
+          <div><strong>Review window:</strong> usually 1 hour, maximum 24 hours.</div>
+          <div><strong>While waiting:</strong> you can browse listings, message sellers, use the map, and buy items.</div>
+          <div><strong>Selling:</strong> your listing tools are available, but your public Verified Seller badge appears after approval.</div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="navigate('browse')" class="border-2 border-gray-200 text-gray-700 font-bold py-3 rounded-xl">Browse</button>
+          <button onclick="navigate('sell')" class="text-white font-bold py-3 rounded-xl" style="background:#F97316">Create Listing</button>
+        </div>
+      </div>`;
+    return;
+  }
+  const steps = ['ID Type','Upload','Review'];
+  document.getElementById('kyc-steps').innerHTML = steps.map((s,i) => {
+    const n = i+1;
+    const cls = n < kycStep ? 'step-done' : n === kycStep ? 'step-active' : 'step-inactive';
+    return `<div class="flex items-center gap-2">${i>0?'<div class="h-px w-5 bg-gray-200 mx-1"></div>':''}<div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${cls}">${n < kycStep ? '✓' : n}</div><span class="text-xs hidden sm:block ${n<=kycStep?'text-gray-900 font-medium':'text-gray-400'}">${s}</span></div>`;
+  }).join('');
+  if (kycStep===1) renderKyc1();
+  if (kycStep===2) renderKyc2();
+  if (kycStep===3) renderKyc3();
+}
+
+function renderKyc1() {
+  document.getElementById('kyc-form').innerHTML = `
+    <div class="fade-in">
+      <h2 class="font-bold text-gray-900 mb-4">Step 1 of 3 — Choose your ID type</h2>
+      <div class="grid grid-cols-2 gap-4 mb-5">
+        ${[
+          {id:'nrc',icon:'🪪',label:'NRC',sub:'National Registration Card',note:'Both sides required'},
+          {id:'passport',icon:'📘',label:'Passport',sub:'Valid passport — any country',note:'Photo page only'},
+        ].map(o=>`
+          <button onclick="kycIdType='${o.id}';renderKyc1Sel();" id="id-${o.id}" class="p-5 rounded-2xl border-2 text-left transition-all ${kycIdType===o.id?'border-[#F97316] bg-orange-50':'border-gray-200 bg-white hover:border-gray-300'}">
+            <div class="text-3xl mb-2">${o.icon}</div>
+            <div class="font-bold text-gray-900 text-sm">${o.label}</div>
+            <div class="text-xs text-gray-500">${o.sub}</div>
+            <div class="text-[10px] text-gray-400 mt-1">${o.note}</div>
+          </button>`).join('')}
+      </div>
+      <button onclick="if(kycIdType){kycStep++;renderKyc();}else{alert('Please select an ID type.');}" class="w-full text-white font-bold py-4 rounded-xl" style="background:#F97316">Continue →</button>
+    </div>`;
+}
+
+function renderKyc1Sel() {
+  ['nrc','passport'].forEach(x => {
+    const el = document.getElementById('id-'+x);
+    if (!el) return;
+    if (x === kycIdType) el.className = el.className.replace('border-gray-200 bg-white hover:border-gray-300','border-[#F97316] bg-orange-50');
+    else el.className = el.className.replace('border-[#F97316] bg-orange-50','border-gray-200 bg-white hover:border-gray-300');
+  });
+}
+
+function renderKyc2() {
+  document.getElementById('kyc-form').innerHTML = `
+    <div class="fade-in">
+      <h2 class="font-bold text-gray-900 mb-1">Step 2 of 3 — Upload your ${kycIdType==='nrc'?'NRC':'Passport'}</h2>
+      <p class="text-sm text-gray-500 mb-4">Ensure the image is clear and all text is readable.</p>
+      <div class="space-y-3 mb-5">
+        <div onclick="kycFront=true;renderKyc2();" class="border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${kycFront?'border-green-400 bg-green-50':'border-gray-300 hover:border-[#F97316] hover:bg-orange-50'}">
+          ${kycFront ? '<div class="text-green-600"><div class="text-2xl">✅</div><span class="text-sm font-semibold">'+(kycIdType==='nrc'?'NRC Front':'Passport Photo Page')+' uploaded ✓</span></div>' : '<div class="text-3xl mb-1">📄</div><p class="text-sm font-medium text-gray-700">'+(kycIdType==='nrc'?'NRC Front Side':'Passport Photo Page')+'</p><p class="text-xs text-gray-400">Click to upload · JPG/PNG · max 5MB</p>'}
+        </div>
+        ${kycIdType==='nrc' ? `
+        <div onclick="kycBack=true;renderKyc2();" class="border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${kycBack?'border-green-400 bg-green-50':'border-gray-300 hover:border-[#F97316] hover:bg-orange-50'}">
+          ${kycBack ? '<div class="text-green-600"><div class="text-2xl">✅</div><span class="text-sm font-semibold">NRC Back uploaded ✓</span></div>' : '<div class="text-3xl mb-1">📄</div><p class="text-sm font-medium text-gray-700">NRC Back Side</p><p class="text-xs text-gray-400">Click to upload · JPG/PNG · max 5MB</p>'}
+        </div>` : ''}
+        <div onclick="kycSelfie=true;renderKyc2();" class="border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${kycSelfie?'border-green-400 bg-green-50':'border-gray-300 hover:border-[#F97316] hover:bg-orange-50'}">
+          ${kycSelfie ? '<div class="text-green-600"><div class="text-2xl">✅</div><span class="text-sm font-semibold">Selfie uploaded ✓</span></div>' : '<div class="text-3xl mb-1">🤳</div><p class="text-sm font-medium text-gray-700">Selfie holding your ID</p><p class="text-xs text-gray-400">Hold your ID next to your face.</p>'}
+        </div>
+      </div>
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 text-xs text-blue-700">🔒 Documents stored in a <strong>separate encrypted database</strong> — never visible to buyers or the main platform.</div>
+      <div class="flex gap-3">
+        <button onclick="kycStep--;renderKyc();" class="flex-1 border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl">← Back</button>
+        <button onclick="if(kycFront&&(kycIdType!='nrc'||kycBack)&&kycSelfie){kycStep++;renderKyc();}else{alert('Please upload all required documents.');}" class="flex-1 text-white font-bold py-4 rounded-xl" style="background:#F97316">Continue →</button>
+      </div>
+    </div>`;
+}
+
+function renderKyc3() {
+  document.getElementById('kyc-form').innerHTML = `
+    <div class="fade-in">
+      <h2 class="font-bold text-gray-900 mb-4">Step 3 of 3 — Review &amp; Submit</h2>
+      <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-4 space-y-2">
+        <div class="flex items-center justify-between text-sm"><span class="text-gray-500">ID Type</span><span class="font-semibold">${kycIdType==='nrc'?'National Registration Card (NRC)':'Passport'}</span></div>
+        <div class="flex items-center justify-between text-sm"><span class="text-gray-500">Front</span><span class="text-green-600 font-semibold">✅ Uploaded</span></div>
+        ${kycIdType==='nrc'?'<div class="flex items-center justify-between text-sm"><span class="text-gray-500">Back</span><span class="text-green-600 font-semibold">✅ Uploaded</span></div>':''}
+        <div class="flex items-center justify-between text-sm"><span class="text-gray-500">Selfie</span><span class="text-green-600 font-semibold">✅ Uploaded</span></div>
+      </div>
+      <div class="bg-gray-50 rounded-2xl p-4 mb-4 text-xs text-gray-500">
+        <strong class="text-gray-700">Privacy &amp; Data Policy:</strong> Your documents are stored in an isolated, AES-256 encrypted database separate from the main platform. Access is restricted to compliance officers only. Documents are never shared with buyers. You may request deletion at any time.
+      </div>
+      <label class="flex items-start gap-3 mb-5 cursor-pointer">
+        <input type="checkbox" id="kyc-agree" class="mt-0.5 w-4 h-4" style="accent-color:#F97316" onchange="kycAgreed=this.checked" />
+        <span class="text-sm text-gray-700">I confirm this is my genuine ID and consent to Pasampo storing it securely for verification purposes.</span>
+      </label>
+      <div class="flex gap-3">
+        <button onclick="kycStep--;renderKyc();" class="flex-1 border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl">← Back</button>
+        <button onclick="submitKyc()" class="flex-1 text-white font-bold py-4 rounded-xl" style="background:#F97316">Submit for Review 🛡️</button>
+      </div>
+    </div>`;
+}
+
+function submitKyc() {
+  if (!document.getElementById('kyc-agree').checked) { alert('Please agree to the data policy before submitting.'); return; }
+  const user = getUser() || {};
+  user.verificationStatus = 'pending';
+  user.verificationSubmittedAt = new Date().toISOString();
+  saveUser(user);
+  renderAuthBtn();
+  document.getElementById('kyc-form').innerHTML = `
+    <div class="text-center py-8 fade-in">
+      <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">✅</div>
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Verification Submitted!</h2>
+      <p class="text-gray-500 mb-5">We'll review your ${kycIdType==='nrc'?'NRC':'Passport'} within <strong>1-24 hours</strong>. You'll receive a notification once approved. You can continue browsing, messaging, buying, and preparing listings while you wait.</p>
+      <div class="bg-blue-50 rounded-2xl p-4 text-sm text-blue-700 text-left space-y-2 mb-5">
+        <div>🔒 Documents stored in an encrypted separate database</div>
+        <div>🛡️ Only Pasampo compliance staff can access your ID</div>
+        <div>⏱️ Review status: Pending compliance check</div>
+        <div>✅ You can delete your ID data at any time from Settings</div>
+      </div>
+      <button onclick="navigate('home')" class="w-full text-white font-bold py-4 rounded-xl" style="background:#F97316">Back to Home</button>
+    </div>`;
+}
+
+// ─── SELL QUOTA HEADER ───────────────────────────────────────────
+function renderSellQuota() {
+  const ss = getStoreSettings();
+  const limit = ss.plan === 'premium' ? PREMIUM_LIMIT : FREE_LIMIT;
+  const used = ss.listingCount;
+  const pct = Math.round((used/limit)*100);
+  const remaining = limit - used;
+  const el = document.getElementById('sell-quota-header');
+  if (!el) return;
+  if (used >= limit) {
+    el.innerHTML = `
+      <div class="bg-red-50 border border-red-200 rounded-2xl p-5 mb-6 text-center">
+        <div class="text-3xl mb-2">🚫</div>
+        <h2 class="font-bold text-red-700 mb-1">Listing Limit Reached</h2>
+        <p class="text-sm text-red-600 mb-3">You've used all <strong>${limit}</strong> of your ${ss.plan==='premium'?'Premium':'Free'} listings.</p>
+        ${ss.plan!=='premium' ? `<button onclick="openUpgradeModal()" class="text-white font-bold px-6 py-2.5 rounded-xl text-sm" style="background:#F97316">Upgrade to Premium — K${PREMIUM_PRICE_K}/mo for ${PREMIUM_LIMIT} listings</button>` : '<p class="text-sm text-red-500">Delete an existing listing to add a new one.</p>'}
+      </div>`;
+    document.getElementById('sell-steps').style.opacity = '0.4';
+    document.getElementById('sell-form').innerHTML = '';
+    return;
+  }
+  el.innerHTML = `
+    <h1 class="text-2xl font-bold text-gray-900 mb-1">Create a Listing</h1>
+    <p class="text-gray-500 text-sm mb-3">${used}/${limit} listings used · ${ss.plan==='premium'?'<span class="text-[#F97316] font-semibold">Premium Plan ⭐</span>':'<span class="cursor-pointer text-[#F97316] hover:underline" onclick="openUpgradeModal()">Upgrade for ${PREMIUM_LIMIT} listings</span>'}</p>
+    <div class="h-2 bg-gray-100 rounded-full overflow-hidden mb-1"><div class="h-full rounded-full transition-all" style="width:${pct}%;background:#F97316"></div></div>
+    <p class="text-xs text-gray-400 mb-5">${remaining} listing${remaining!==1?'s':''} remaining</p>`;
+}
+
+// ─── UPGRADE MODAL ───────────────────────────────────────────────
+function openUpgradeModal() {
+  document.getElementById('upgrade-modal').classList.add('open');
+}
+function closeUpgradeModal() {
+  document.getElementById('upgrade-modal').classList.remove('open');
+}
+function activatePremium() {
+  const ss = getStoreSettings();
+  ss.plan = 'premium';
+  saveStoreSettings(ss);
+  closeUpgradeModal();
+  renderSellQuota();
+  renderSell();
+  alert('✅ Premium activated! You now have ' + PREMIUM_LIMIT + ' listing slots.');
+}
+
+// ─── STORE ────────────────────────────────────────────────────────
+function renderStore() {
+  const ss = getStoreSettings();
+  if (!ss.isSeller) {
+    document.getElementById('store-content').innerHTML = `
+      <div class="max-w-xl mx-auto bg-white border border-gray-100 rounded-3xl p-7 text-center shadow-sm">
+        <div class="w-20 h-20 rounded-3xl mx-auto mb-4 flex items-center justify-center text-4xl" style="background:#fff7ed">🏪</div>
+        <h1 class="text-2xl font-black text-gray-950 mb-2">Become a Pasampo Seller</h1>
+        <p class="text-sm text-gray-500 mb-5">Your store dashboard appears once you choose to sell. Free sellers can list up to 5 items; Premium sellers can manage 30 active listings for K500/month.</p>
+        <div class="grid grid-cols-3 gap-3 mb-6 text-xs">
+          <div class="bg-gray-50 rounded-2xl p-3"><div class="text-xl mb-1">📦</div><strong>5 free</strong><br><span class="text-gray-400">listings</span></div>
+          <div class="bg-gray-50 rounded-2xl p-3"><div class="text-xl mb-1">📈</div><strong>Market</strong><br><span class="text-gray-400">pricing</span></div>
+          <div class="bg-gray-50 rounded-2xl p-3"><div class="text-xl mb-1">🏍️</div><strong>Biker</strong><br><span class="text-gray-400">delivery</span></div>
+        </div>
+        <button onclick="becomeSeller()" class="w-full text-white font-bold py-4 rounded-2xl" style="background:#F97316">Activate Seller Store →</button>
+        <button onclick="navigate('browse')" class="w-full text-gray-500 font-semibold py-3 rounded-2xl mt-2">Browse first</button>
+      </div>`;
+    return;
+  }
+  const storeProducts = PRODUCTS.filter(p => p.storeId === 's1');
+  const limit = ss.plan === 'premium' ? PREMIUM_LIMIT : FREE_LIMIT;
+  const reviews = REVIEWS['s1'] || [];
+  const avgRating = (reviews.reduce((a,r)=>a+r.rating,0)/reviews.length).toFixed(1);
+  document.getElementById('store-content').innerHTML = `
+    <div data-nav="browse" class="flex items-center gap-2 text-sm text-gray-500 hover:text-[#F97316] mb-5 cursor-pointer">← Back to listings</div>
+
+    <!-- Store Header -->
+    <div class="text-white rounded-2xl p-7 mb-6 relative overflow-hidden" style="background:#0F172A">
+      <div class="absolute top-0 right-0 w-48 h-48 rounded-full" style="background:rgba(249,115,22,.1);transform:translate(30%,-30%)"></div>
+      <div class="relative flex items-start gap-5">
+        <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background:${ss.color}">🏪</div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <h1 class="text-2xl font-bold">${ss.name}</h1>
+            <span class="bg-green-500/20 border border-green-400/30 text-green-300 text-xs px-2 py-0.5 rounded-full">✓ Verified</span>
+            ${ss.plan==='premium'?'<span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:rgba(249,115,22,.3);color:#fcd34d">⭐ Premium</span>':''}
+          </div>
+          <p class="text-sm mb-1" style="color:${ss.color};font-style:italic">"${ss.catchphrase}"</p>
+          <p class="text-gray-400 text-sm">by Chanda Mwale · Lusaka, Woodlands</p>
+          <p class="text-gray-300 text-sm mt-1">${ss.bio}</p>
+        </div>
+        <button onclick="openStoreEditor()" class="shrink-0 border border-white/20 text-white text-xs px-3 py-2 rounded-xl hover:bg-white/10 transition-colors">✏️ Edit Store</button>
+      </div>
+      <div class="relative grid grid-cols-4 gap-4 mt-5 pt-5 border-t border-white/10">
+        <div class="text-center"><div class="text-xl font-bold" style="color:${ss.color}">${avgRating} ★</div><div class="text-xs text-gray-400">Rating</div><div class="text-[10px] text-gray-500">${reviews.length} reviews</div></div>
+        <div class="text-center"><div class="text-xl font-bold" style="color:${ss.color}">127</div><div class="text-xs text-gray-400">Total Sales</div></div>
+        <div class="text-center"><div class="text-xl font-bold" style="color:${ss.color}">${storeProducts.length}/${limit}</div><div class="text-xs text-gray-400">Listings</div></div>
+        <div class="text-center"><div class="text-xl font-bold" style="color:${ss.color}">Jan 2024</div><div class="text-xs text-gray-400">Member Since</div></div>
+      </div>
+    </div>
+
+    <!-- Listings -->
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-bold text-gray-900">Store Listings (${storeProducts.length})</h2>
+      <div data-nav="sell" class="text-sm text-white px-4 py-2 rounded-xl font-semibold cursor-pointer" style="background:${ss.color}">+ Add Item</div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">${storeProducts.map(p => productCard(p, `navigate('product',${p.id})`)).join('')}</div>
+
+    <!-- Reviews -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-900">Customer Reviews <span class="text-gray-400 font-normal text-sm">(${reviews.length})</span></h2>
+        <button onclick="openAddReview()" class="text-sm font-semibold px-4 py-2 rounded-xl border-2 hover:bg-orange-50 transition-colors" style="color:#F97316;border-color:#F97316">+ Write Review</button>
+      </div>
+      <div class="space-y-3" id="reviews-list">
+        ${reviews.map(r => reviewCard(r)).join('')}
+      </div>
+    </div>
+
+    <!-- Upgrade CTA (free only) -->
+    ${ss.plan!=='premium' ? `
+    <div class="rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4" style="background:rgba(249,115,22,.05);border:1px solid rgba(249,115,22,.2)">
+      <div>
+        <h3 class="font-bold text-gray-900 mb-1">Upgrade to Premium</h3>
+        <p class="text-sm text-gray-500">${FREE_LIMIT - storeProducts.length} free slots left. Go Premium for ${PREMIUM_LIMIT} listings, priority placement &amp; analytics.</p>
+      </div>
+      <button onclick="openUpgradeModal()" class="text-white font-bold px-6 py-3 rounded-xl shrink-0" style="background:#F97316">Upgrade — K${PREMIUM_PRICE_K}/mo</button>
+    </div>` : ''}`;
+}
+
+// ─── REVIEW CARD ─────────────────────────────────────────────────
+function reviewCard(r) {
+  const stars = '⭐'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+  return `<div class="bg-white rounded-2xl p-4 border border-gray-100">
+    <div class="flex items-start gap-3">
+      <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style="background:#F97316">${r.avatar}</div>
+      <div class="flex-1">
+        <div class="flex items-center justify-between mb-1">
+          <span class="font-semibold text-sm text-gray-900">${r.name}</span>
+          <span class="text-xs text-gray-400">${r.date}</span>
+        </div>
+        <div class="text-sm mb-1">${stars}</div>
+        <p class="text-sm text-gray-600">${r.text}</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── ADD REVIEW MODAL ────────────────────────────────────────────
+function openAddReview() {
+  document.getElementById('review-modal').classList.add('open');
+}
+function closeReviewModal() {
+  document.getElementById('review-modal').classList.remove('open');
+}
+function submitReview() {
+  const name = document.getElementById('rv-name').value.trim();
+  const text = document.getElementById('rv-text').value.trim();
+  const rating = parseInt(document.getElementById('rv-rating').value);
+  if (!name || !text) { alert('Please fill in your name and review.'); return; }
+  const newReview = { name, avatar: name[0].toUpperCase(), rating, text, date: 'Just now' };
+  REVIEWS['s1'].unshift(newReview);
+  closeReviewModal();
+  document.getElementById('reviews-list').innerHTML = (REVIEWS['s1']).map(r => reviewCard(r)).join('');
+}
+
+// ─── STORE EDITOR ────────────────────────────────────────────────
+function openStoreEditor() {
+  const ss = getStoreSettings();
+  document.getElementById('se-name').value = ss.name;
+  document.getElementById('se-catchphrase').value = ss.catchphrase;
+  document.getElementById('se-bio').value = ss.bio;
+  document.getElementById('store-edit-modal').classList.add('open');
+}
+function closeStoreEditor() {
+  document.getElementById('store-edit-modal').classList.remove('open');
+}
+function saveStoreEdits() {
+  const ss = getStoreSettings();
+  ss.name = document.getElementById('se-name').value.trim() || ss.name;
+  ss.catchphrase = document.getElementById('se-catchphrase').value.trim() || ss.catchphrase;
+  ss.bio = document.getElementById('se-bio').value.trim() || ss.bio;
+  const colorPick = document.querySelector('input[name="se-color"]:checked');
+  if (colorPick) ss.color = colorPick.value;
+  saveStoreSettings(ss);
+  closeStoreEditor();
+  renderStore();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STEP 4 — IMAGE UPLOAD · LOCALSTORAGE · MESSAGING
+// ═══════════════════════════════════════════════════════════════════
+
+// ─── IMAGE UPLOAD ─────────────────────────────────────────────────
+let uploadedImages = [];
+
+function handleImageUpload(e) {
+  const files = Array.from(e.target.files);
+  const slots = 6 - uploadedImages.length;
+  files.slice(0, slots).forEach(file => {
+    if (file.size > 5*1024*1024) { showToast('⚠️ ' + file.name + ' is over 5 MB — skipped.'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      uploadedImages.push({ name: file.name, url: ev.target.result });
+      renderImagePreviews();
+    };
+    reader.readAsDataURL(file);
+  });
+  // Reset input so same file can be re-selected
+  e.target.value = '';
+}
+
+function renderImagePreviews() {
+  const grid = document.getElementById('img-previews');
+  const cnt  = document.getElementById('img-count');
+  if (cnt) cnt.textContent = uploadedImages.length + '/6 photos added · JPG, PNG · max 5MB each';
+  if (!grid) return;
+  grid.innerHTML = uploadedImages.map((img,i) => `
+    <div class="relative rounded-xl overflow-hidden border border-gray-200" style="aspect-ratio:1">
+      <img src="${img.url}" class="w-full h-full object-cover" alt="${img.name}" />
+      <button onclick="removeImage(${i})"
+        class="absolute top-1 right-1 w-6 h-6 rounded-full text-white text-sm font-bold flex items-center justify-center"
+        style="background:rgba(0,0,0,.55)">×</button>
+    </div>`).join('');
+  // Show/hide drop zone
+  const dz = document.getElementById('img-drop-zone');
+  if (dz) dz.style.display = uploadedImages.length >= 6 ? 'none' : '';
+}
+
+function removeImage(i) {
+  uploadedImages.splice(i,1);
+  renderImagePreviews();
+}
+
+// ─── LOCALSTORAGE HELPERS ─────────────────────────────────────────
+function getSavedListings() {
+  try { return JSON.parse(localStorage.getItem('pasampo_listings') || '[]'); }
+  catch(e) { return []; }
+}
+
+function getAllProducts() {
+  return [...PRODUCTS, ...getSavedListings()];
+}
+
+// ─── MESSAGING / INBOX ────────────────────────────────────────────
+const QUICK_MSGS = [
+  'Is this still available?',
+  'Can you do a lower price?',
+  'Can I pick it up today?',
+  'Any defects or damage?',
+  'Do you deliver to Woodlands?',
+  'Can I see more photos?',
+];
+
+function getConvos() {
+  try { return JSON.parse(localStorage.getItem('pasampo_convos') || '[]'); }
+  catch(e) { return []; }
+}
+function saveConvos(c) { localStorage.setItem('pasampo_convos', JSON.stringify(c)); }
+
+let activeConvoId = null;
+
+// Called when buyer clicks "Message Seller" on a product
+function openMessage(productId) {
+  if (!getUser()) {
+    pendingAuthAction = { messageProductId: productId };
+    openAuthModal('signup');
+    setTimeout(() => {
+      const body = document.getElementById('auth-body');
+      if (body) {
+        body.insertAdjacentHTML('afterbegin', `
+          <div class="bg-orange-50 border border-orange-100 rounded-2xl p-3 mb-4 text-sm text-orange-800">
+            Create your Pasampo profile first, then your message thread will open automatically.
+          </div>`);
+      }
+    }, 0);
+    return;
+  }
+  const p = PRODUCTS.find(x => x.id === productId);
+  if (!p) return;
+  const convos = getConvos();
+  let convo = convos.find(c => c.productId === productId);
+  if (!convo) {
+    convo = {
+      id: 'c_' + productId + '_' + Date.now(),
+      productId,
+      productTitle: p.title,
+      storeName: p.store,
+      messages: [{ from:'seller', text:'Hi! Thanks for your interest in "' + p.title.slice(0,30) + '…". How can I help?', time: now() }],
+      unread: 1,
+    };
+    convos.push(convo);
+    saveConvos(convos);
+  }
+  activeConvoId = convo.id;
+  navigate('inbox');
+}
+
+function renderInbox() {
+  const convos = getConvos();
+  const total  = convos.reduce((s,c)=>s+(c.unread||0),0);
+  const cnt    = document.getElementById('inbox-count');
+  if (cnt) cnt.textContent = convos.length + ' conversation' + (convos.length!==1?'s':'');
+  const badge = document.getElementById('inbox-badge');
+  if (badge) { badge.classList.toggle('hidden', total===0); if(total>0) badge.textContent=total; }
+
+  const list = document.getElementById('convo-list');
+  if (!list) return;
+
+  if (convos.length===0) {
+    list.innerHTML = `<div class="text-center py-12 text-gray-400"><div class="text-4xl mb-2">💬</div><p class="text-sm">No messages yet.<br>Tap a listing to message the seller.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = convos.map(c => `
+    <div onclick="openConvo('${c.id}')" class="bg-white rounded-2xl p-4 border-2 cursor-pointer transition-all ${activeConvoId===c.id?'border-[#F97316]':'border-gray-100 hover:border-gray-200'}">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0" style="background:rgba(249,115,22,.1)">🏪</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-0.5">
+            <span class="font-semibold text-sm text-gray-900 truncate">${c.storeName}</span>
+            ${c.unread?`<span class="w-5 h-5 rounded-full text-white text-xs font-bold flex items-center justify-center shrink-0" style="background:#F97316">${c.unread}</span>`:''}
+          </div>
+          <p class="text-xs text-gray-500 lc2">${c.productTitle}</p>
+          <p class="text-xs text-gray-400 mt-0.5">${c.messages.at(-1)?.text?.slice(0,40)||''}…</p>
+        </div>
+      </div>
+    </div>`).join('');
+
+  if (activeConvoId) openConvo(activeConvoId);
+}
+
+function openConvo(id) {
+  activeConvoId = id;
+  const convos = getConvos();
+  const c = convos.find(x=>x.id===id);
+  if (!c) return;
+  c.unread = 0; saveConvos(convos);
+  renderInbox(); // refresh list
+
+  const panel = document.getElementById('chat-panel');
+  if (!panel) return;
+  panel.innerHTML = `
+    <!-- Chat header -->
+    <div class="flex items-center gap-3 p-4 border-b border-gray-100">
+      <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:rgba(249,115,22,.1)">🏪</div>
+      <div>
+        <p class="font-semibold text-sm text-gray-900">${c.storeName}</p>
+        <p class="text-xs text-gray-400 lc2">${c.productTitle.slice(0,45)}</p>
+      </div>
+    </div>
+    <!-- Messages -->
+    <div id="chat-msgs" class="flex-1 overflow-y-auto p-4 space-y-3" style="max-height:320px">
+      ${c.messages.map(m => msgBubble(m)).join('')}
+    </div>
+    <!-- Quick replies -->
+    <div class="px-4 py-2 border-t border-gray-100">
+      <p class="text-xs text-gray-400 mb-2">Quick replies:</p>
+      <div class="flex flex-wrap gap-1.5">
+        ${QUICK_MSGS.map(q=>`<button onclick="sendMsg('${q.replace(/'/g,"\\'")}','${id}')" class="text-xs border border-gray-200 rounded-full px-3 py-1 hover:border-[#F97316] hover:text-[#F97316] transition-colors">${q}</button>`).join('')}
+      </div>
+    </div>
+    <!-- Input -->
+    <div class="p-4 border-t border-gray-100 flex gap-2">
+      <input id="chat-input" type="text" placeholder="Type a message…" class="flex-1 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm"
+        onkeydown="if(event.key==='Enter')sendMsg(document.getElementById('chat-input').value,'${id}')" />
+      <button onclick="sendMsg(document.getElementById('chat-input').value,'${id}')"
+        class="text-white font-bold px-4 py-2.5 rounded-xl shrink-0" style="background:#F97316">Send</button>
+    </div>`;
+
+  // Scroll to bottom
+  setTimeout(() => {
+    const msgs = document.getElementById('chat-msgs');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  }, 50);
+}
+
+function msgBubble(m) {
+  const isBuyer = m.from==='buyer';
+  return `<div class="flex ${isBuyer?'justify-end':'justify-start'}">
+    <div class="max-w-xs px-4 py-2.5 text-sm rounded-2xl ${isBuyer?'text-white rounded-br-none':'bg-gray-100 text-gray-800 rounded-bl-none'}"
+      style="${isBuyer?'background:#F97316':''}">
+      ${m.text}
+      <div class="text-[10px] mt-1 ${isBuyer?'text-orange-200':'text-gray-400'}">${m.time}</div>
+    </div>
+  </div>`;
+}
+
+function sendMsg(text, convoId) {
+  if (!text?.trim()) return;
+  const convos = getConvos();
+  const c = convos.find(x=>x.id===convoId);
+  if (!c) return;
+  c.messages.push({ from:'buyer', text:text.trim(), time:now() });
+  // Auto-reply after 1s
+  setTimeout(() => {
+    const replies = [
+      'Yes, it\'s still available! When would you like to see it?',
+      'The best I can do is K' + Math.round(Math.random()*500+200) + ', firm.',
+      'You can pick up from ' + c.storeName + ' in Lusaka.',
+      'It\'s in great condition — no damage at all.',
+      'Yes, I can arrange delivery to your area for K' + Math.round(Math.random()*100+50) + '.',
+      'I\'ll send more photos shortly!',
+    ];
+    c.messages.push({ from:'seller', text:replies[Math.floor(Math.random()*replies.length)], time:now() });
+    saveConvos(convos);
+    if (activeConvoId===convoId) openConvo(convoId);
+  }, 1000);
+  saveConvos(convos);
+  const input = document.getElementById('chat-input');
+  if (input) input.value='';
+  openConvo(convoId);
+}
+
+function now() {
+  return new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DESIGN POLISH — scroll reveal · header shadow · feature cards
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Header shadow on scroll ───────────────────────────────────────
+window.addEventListener('scroll', () => {
+  document.querySelector('header').classList.toggle('scrolled', window.scrollY > 8);
+}, { passive: true });
+
+// ── Scroll reveal observer ────────────────────────────────────────
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 60);
+      revealObserver.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.12 });
+
+function applyReveal() {
+  document.querySelectorAll('.cat-card, .feat-card, .testi-card, .card-hover').forEach(el => {
+    if (!el.classList.contains('reveal')) {
+      el.classList.add('reveal');
+      revealObserver.observe(el);
+    }
+  });
+}
+
+// ── Apply feat-card class to feature cards in DOM ─────────────────
+function upgradeFeatCards() {
+  document.querySelectorAll('#page-home section .rounded-2xl').forEach(el => {
+    if (el.querySelector('h3') && el.querySelector('p') && !el.classList.contains('card-hover')) {
+      el.classList.add('feat-card');
+    }
+  });
+}
+
+// ── Testimonial card class ────────────────────────────────────────
+function upgradeTestiCards() {
+  document.querySelectorAll('#page-home .bg-white.rounded-2xl.flex.flex-col').forEach(el => {
+    el.classList.add('testi-card');
+  });
+}
+
+// ── Run upgrades after home renders ──────────────────────────────
+const _origRenderHome = renderHomeLists;
+renderHomeLists = function() {
+  _origRenderHome();
+  requestAnimationFrame(() => {
+    upgradeFeatCards();
+    upgradeTestiCards();
+    applyReveal();
+  });
+};
+
+// ─── INIT ─────────────────────────────────────────────────────────
+renderHomeLists();
+renderAuthBtn();
+navigate('home');
+</script>
+</body>
+</html>
