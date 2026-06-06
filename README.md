@@ -4,6 +4,12 @@ Pasampo is a prototype for a Zambian verified marketplace where users can browse
 
 ## Prototype
 
+Live GitHub Pages URL:
+
+```txt
+https://lukundos-dev.github.io/Pasampo/
+```
+
 Open the site locally with:
 
 ```bash
@@ -29,5 +35,19 @@ http://localhost:8765/
 ## Deployment
 
 This project is currently a static website. GitHub Pages can serve it from the repository root using `index.html`.
+
+Recommended GitHub Pages settings:
+
+- Source: `Deploy from a branch`
+- Branch: `main`
+- Folder: `/root`
+
+To publish updates:
+
+```bash
+git add .
+git commit -m "Update Pasampo prototype"
+git push
+```
 
 For a custom domain, add a `CNAME` file containing the domain name, then configure DNS with your domain provider.
