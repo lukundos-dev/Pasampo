@@ -146,6 +146,22 @@
       background: #fff;
       box-shadow: 0 8px 22px rgba(15,23,42,.08);
     }
+    .image-caption {
+      background: white;
+      border: 1px solid #eef2f7;
+      border-top: 0;
+      border-radius: 0 0 18px 18px;
+      padding: 10px 12px;
+    }
+    .category-photo img { height: 92px; border-radius: 18px 18px 0 0; }
+    .category-photo { background: white; border: 1px solid #eef2f7; border-radius: 18px; overflow: hidden; }
+    .hero-deal-caption {
+      background: #fff;
+      border-radius: 0 0 22px 22px;
+      padding: 12px;
+      border: 1px solid #eef2f7;
+      border-top: 0;
+    }
 
     /* ── Feature card ──────────────────────────────────── */
     .feat-card {
@@ -289,6 +305,7 @@
     <nav class="hidden md:flex items-center gap-1">
       <div data-nav="browse" class="nav-pill">Browse</div>
       <div data-nav="verify" class="nav-pill">Get Verified</div>
+      <div data-nav="admin" class="nav-pill">Admin</div>
     </nav>
     <div class="flex-1"></div>
     <!-- Right actions -->
@@ -296,9 +313,9 @@
       <div data-nav="sell" class="bg-[#DC2626] hover:bg-[#B91C1C] text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors shadow-sm cursor-pointer">
         + Sell Now
       </div>
-      <button class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-        <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-[#DC2626] rounded-full ring-1 ring-white"></span>
+      <button onclick="openCartModal()" class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600" title="Cart">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 002 1.6h8.8a2 2 0 002-1.6L23 6H6"/></svg>
+        <span id="cart-badge" class="hidden absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-[#DC2626] text-white text-[10px] font-black rounded-full ring-1 ring-white items-center justify-center">0</span>
       </button>
       <!-- Auth button — switches between Sign Up and logged-in avatar -->
       <div id="auth-btn-area">
@@ -316,6 +333,7 @@
   <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 px-4 py-3 space-y-1">
     <div data-nav="browse" class="py-2.5 px-3 rounded-xl hover:bg-gray-50 text-sm font-medium text-gray-700">Browse All Listings</div>
     <div data-nav="verify" class="py-2.5 px-3 rounded-xl hover:bg-gray-50 text-sm font-medium text-gray-700">Get Verified</div>
+    <div data-nav="admin" class="py-2.5 px-3 rounded-xl hover:bg-gray-50 text-sm font-medium text-gray-700">Admin Dashboard</div>
     <div data-nav="sell" class="bg-[#DC2626] text-white font-bold text-center py-3 rounded-xl mt-1">+ Sell Now</div>
   </div>
 </header>
@@ -387,21 +405,27 @@
             <span class="text-xs font-bold bg-red-100 text-red-700 px-3 py-1 rounded-full">Verified only</span>
           </div>
           <div class="grid grid-cols-2 gap-3">
-            <div class="photo-tile rounded-3xl min-h-[180px]">
+            <div class="rounded-3xl overflow-hidden bg-white border border-gray-100">
+              <div class="photo-tile h-[135px]">
               <img src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=600&q=80" alt="Samsung Galaxy A54">
-              <div class="absolute inset-x-3 bottom-3 bg-white/92 rounded-2xl p-3 shadow">
+              </div>
+              <div class="hero-deal-caption">
                 <p class="font-black text-sm">Galaxy A54</p><p class="text-xs text-gray-500">K 2,800 · Woodlands</p>
               </div>
             </div>
-            <div class="photo-tile rounded-3xl min-h-[180px]">
+            <div class="rounded-3xl overflow-hidden bg-white border border-gray-100">
+              <div class="photo-tile h-[135px]">
               <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=600&q=80" alt="Toyota Vitz">
-              <div class="absolute inset-x-3 bottom-3 bg-white/92 rounded-2xl p-3 shadow">
+              </div>
+              <div class="hero-deal-caption">
                 <p class="font-black text-sm">Toyota Vitz</p><p class="text-xs text-gray-500">K 89,000 · Chilenje</p>
               </div>
             </div>
-            <div class="photo-tile rounded-3xl min-h-[140px]">
+            <div class="rounded-3xl overflow-hidden bg-white border border-gray-100">
+              <div class="photo-tile h-[95px]">
               <img src="https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=600&q=80" alt="PlayStation 5">
-              <div class="absolute left-3 right-3 bottom-3 bg-white/92 rounded-2xl p-3 shadow">
+              </div>
+              <div class="hero-deal-caption">
                 <p class="font-black text-sm">PS5 Bundle</p><p class="text-xs text-gray-500">K 6,500</p>
               </div>
             </div>
@@ -437,14 +461,14 @@
       <div data-nav="browse" class="text-sm text-[#DC2626] hover:underline flex items-center gap-1 cursor-pointer">All categories ›</div>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
-        <div data-nav="browse" data-cat="phones" class="cat-card photo-tile rounded-2xl h-32 cursor-pointer"><img src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=400&q=80" alt="Phones"><div class="absolute inset-x-2 bottom-2 rounded-xl bg-white/92 p-2"><span class="block text-xs font-black text-gray-900">Phones</span><span class="text-[10px] font-bold text-red-600">1,240 listings</span></div></div>
-        <div data-nav="browse" data-cat="cars" class="cat-card photo-tile rounded-2xl h-32 cursor-pointer"><img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=400&q=80" alt="Cars"><div class="absolute inset-x-2 bottom-2 rounded-xl bg-white/92 p-2"><span class="block text-xs font-black text-gray-900">Cars</span><span class="text-[10px] font-bold text-red-600">890 listings</span></div></div>
-        <div data-nav="browse" data-cat="electronics" class="cat-card photo-tile rounded-2xl h-32 cursor-pointer"><img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80" alt="Electronics"><div class="absolute inset-x-2 bottom-2 rounded-xl bg-white/92 p-2"><span class="block text-xs font-black text-gray-900">Electronics</span><span class="text-[10px] font-bold text-red-600">2,100 listings</span></div></div>
-        <div data-nav="browse" data-cat="shoes" class="cat-card photo-tile rounded-2xl h-32 cursor-pointer"><img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80" alt="Shoes"><div class="absolute inset-x-2 bottom-2 rounded-xl bg-white/92 p-2"><span class="block text-xs font-black text-gray-900">Fashion</span><span class="text-[10px] font-bold text-red-600">3,400 listings</span></div></div>
-        <div data-nav="browse" data-cat="home" class="cat-card photo-tile rounded-2xl h-32 cursor-pointer"><img src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80" alt="Home furniture"><div class="absolute inset-x-2 bottom-2 rounded-xl bg-white/92 p-2"><span class="block text-xs font-black text-gray-900">Home</span><span class="text-[10px] font-bold text-red-600">780 listings</span></div></div>
-        <div data-nav="browse" data-cat="appliances" class="cat-card photo-tile rounded-2xl h-32 cursor-pointer"><img src="https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?auto=format&fit=crop&w=400&q=80" alt="Appliances"><div class="absolute inset-x-2 bottom-2 rounded-xl bg-white/92 p-2"><span class="block text-xs font-black text-gray-900">Appliances</span><span class="text-[10px] font-bold text-red-600">560 listings</span></div></div>
-        <div data-nav="browse" data-cat="sports" class="cat-card photo-tile rounded-2xl h-32 cursor-pointer"><img src="https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=400&q=80" alt="Sports"><div class="absolute inset-x-2 bottom-2 rounded-xl bg-white/92 p-2"><span class="block text-xs font-black text-gray-900">Sports</span><span class="text-[10px] font-bold text-red-600">430 listings</span></div></div>
-        <div data-nav="browse" data-cat="kids" class="cat-card photo-tile rounded-2xl h-32 cursor-pointer"><img src="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=400&q=80" alt="Kids"><div class="absolute inset-x-2 bottom-2 rounded-xl bg-white/92 p-2"><span class="block text-xs font-black text-gray-900">Kids</span><span class="text-[10px] font-bold text-red-600">310 listings</span></div></div>
+        <div data-nav="browse" data-cat="phones" class="cat-card category-photo cursor-pointer"><img src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=400&q=80" alt="Phones"><div class="image-caption"><span class="block text-xs font-black text-gray-900">Phones</span><span class="text-[10px] font-bold text-red-600">1,240 listings</span></div></div>
+        <div data-nav="browse" data-cat="cars" class="cat-card category-photo cursor-pointer"><img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=400&q=80" alt="Cars"><div class="image-caption"><span class="block text-xs font-black text-gray-900">Cars</span><span class="text-[10px] font-bold text-red-600">890 listings</span></div></div>
+        <div data-nav="browse" data-cat="electronics" class="cat-card category-photo cursor-pointer"><img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80" alt="Electronics"><div class="image-caption"><span class="block text-xs font-black text-gray-900">Electronics</span><span class="text-[10px] font-bold text-red-600">2,100 listings</span></div></div>
+        <div data-nav="browse" data-cat="shoes" class="cat-card category-photo cursor-pointer"><img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80" alt="Shoes"><div class="image-caption"><span class="block text-xs font-black text-gray-900">Fashion</span><span class="text-[10px] font-bold text-red-600">3,400 listings</span></div></div>
+        <div data-nav="browse" data-cat="home" class="cat-card category-photo cursor-pointer"><img src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80" alt="Home furniture"><div class="image-caption"><span class="block text-xs font-black text-gray-900">Home</span><span class="text-[10px] font-bold text-red-600">780 listings</span></div></div>
+        <div data-nav="browse" data-cat="appliances" class="cat-card category-photo cursor-pointer"><img src="https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?auto=format&fit=crop&w=400&q=80" alt="Appliances"><div class="image-caption"><span class="block text-xs font-black text-gray-900">Appliances</span><span class="text-[10px] font-bold text-red-600">560 listings</span></div></div>
+        <div data-nav="browse" data-cat="sports" class="cat-card category-photo cursor-pointer"><img src="https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=400&q=80" alt="Sports"><div class="image-caption"><span class="block text-xs font-black text-gray-900">Sports</span><span class="text-[10px] font-bold text-red-600">430 listings</span></div></div>
+        <div data-nav="browse" data-cat="kids" class="cat-card category-photo cursor-pointer"><img src="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=400&q=80" alt="Kids"><div class="image-caption"><span class="block text-xs font-black text-gray-900">Kids</span><span class="text-[10px] font-bold text-red-600">310 listings</span></div></div>
     </div>
   </section>
 
@@ -821,6 +845,21 @@
   </div>
 </div>
 
+<!-- ──────────── PAGE: ADMIN ──────────── -->
+<div id="page-admin" class="page">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+      <div>
+        <p class="text-xs font-black uppercase tracking-wider text-[#DC2626]">Prototype admin backend</p>
+        <h1 class="text-2xl font-black text-gray-950">Pasampo Control Centre</h1>
+        <p class="text-sm text-gray-500 mt-1">Monitor listings, users, disputes, orders, bids, and 5% seller commission deductions.</p>
+      </div>
+      <button onclick="seedAdminDemo()" class="text-white font-bold px-5 py-3 rounded-2xl" style="background:#DC2626">Generate Demo Sale</button>
+    </div>
+    <div id="admin-content"></div>
+  </div>
+</div>
+
 </main><!-- /main -->
 
 <!-- ═══ MODAL: STORE EDITOR ═══ -->
@@ -933,6 +972,20 @@
 
     <!-- Step content -->
     <div id="co-body" class="px-6 py-5"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: CART ═══ -->
+<div id="cart-modal" style="display:none;position:fixed;inset:0;z-index:390;background:rgba(0,0,0,.6);overflow-y:auto;padding:16px;" onclick="if(event.target===this)closeCartModal()">
+  <div class="bg-white rounded-2xl w-full max-w-lg mx-auto my-8 overflow-hidden shadow-2xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div>
+        <h2 class="font-bold text-gray-900 text-lg">Shopping Cart</h2>
+        <p class="text-xs text-gray-400">Buy It Now items only · secure checkout ready</p>
+      </div>
+      <button onclick="closeCartModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 text-xl">×</button>
+    </div>
+    <div id="cart-body" class="px-6 py-5"></div>
   </div>
 </div>
 
@@ -1311,12 +1364,18 @@ let coAgreed      = false;
 let coMap         = null;
 let coMapMarker   = null;
 let ussdTimer     = null;
+let coRecordedOrder = null;
 
 // ─── OPEN / CLOSE ─────────────────────────────────────────────────
 function openCheckoutModal(productId) {
-  coProduct = PRODUCTS.find(p => p.id === productId);
+  coProduct = getProduct(productId);
   if (!coProduct) return;
-  coStep = 1; coDelivery = 'biker'; coNetwork = 'airtel'; coPhone = ''; coStripeEmail = ''; coHubId = null; coAgreed = false;
+  if (coProduct.saleType === 'auction') {
+    showToast('This item is auction-only. Place a bid to compete.');
+    navigate('product', productId);
+    return;
+  }
+  coStep = 1; coDelivery = 'biker'; coNetwork = 'airtel'; coPhone = ''; coStripeEmail = ''; coHubId = null; coAgreed = false; coRecordedOrder = null;
   document.getElementById('checkout-modal').style.display = 'block';
   document.body.style.overflow = 'hidden';
   renderCoStep();
@@ -1363,8 +1422,8 @@ function renderCoStep1() {
   const fee = PLATFORM_FEE_K;
   const del = coDelivery==='biker' ? BIKER_FEE_K : 0;
   const tot = p.price + fee + del;
-  const bg  = (window.CATBG||{})[p.cat] || '#f1f5f9';
-  const emu = (window.CATEMU||{})[p.cat] || '📦';
+  const commission = calculateCommission(p.price);
+  const thumb = imagesFor(p)[0];
 
   document.getElementById('co-title').textContent = 'Review Your Order';
   document.getElementById('co-subtitle').textContent = 'Confirm details before payment';
@@ -1372,8 +1431,7 @@ function renderCoStep1() {
   document.getElementById('co-body').innerHTML = `
     <!-- Product summary -->
     <div class="flex gap-3 mb-5 pb-5 border-b border-gray-100">
-      <div class="w-16 h-16 rounded-xl flex items-center justify-center text-4xl shrink-0"
-        style="background:${bg}">${emu}</div>
+      <img src="${thumb}" alt="${p.title}" class="w-16 h-16 rounded-xl object-cover shrink-0" />
       <div class="flex-1">
         <p class="font-semibold text-gray-900 text-sm leading-snug">${p.title}</p>
         <p class="text-xs text-gray-500 mt-1">${p.cond} · ${p.loc}</p>
@@ -1397,6 +1455,9 @@ function renderCoStep1() {
       <div class="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-gray-100">
         <span>Total</span>
         <span id="co-total" style="color:#DC2626">K ${tot.toLocaleString()}</span>
+      </div>
+      <div class="rounded-xl bg-red-50 border border-red-100 p-3 text-xs text-red-700">
+        Seller commission: Pasampo deducts 5% (K ${commission.toLocaleString()}) from the seller payout after payment. Buyer total is unchanged.
       </div>
     </div>
 
@@ -1780,6 +1841,11 @@ function renderCoStep4() {
   const ref = 'PAS-' + Math.random().toString(36).substr(2,6).toUpperCase();
   const del = coDelivery==='biker' ? BIKER_FEE_K : 0;
   const tot = coProduct.price + PLATFORM_FEE_K + del;
+  if (!coRecordedOrder) {
+    coRecordedOrder = recordOrder(coProduct, tot, coNetwork);
+    if (getCart().includes(coProduct.id)) saveCart(getCart().filter(id => String(id) !== String(coProduct.id)));
+  }
+  const order = coRecordedOrder;
   const paidVia = coNetwork === 'stripe'
     ? 'Stripe card checkout — receipt sent to ' + coStripeEmail
     : (coNetwork==='airtel'?'Airtel':'MTN') + ' Money — ' + coPhone;
@@ -1806,6 +1872,7 @@ function renderCoStep4() {
       <div class="rounded-xl p-3 mb-5 text-xs text-gray-500" style="background:#f8fafc;border:1px solid #e5e7eb">
         <strong>Order Ref:</strong> ${ref} · <strong>Item:</strong> ${coProduct.title.slice(0,30)}…
         <br><strong>Your consumer rights</strong> under ECT Act S.36 are active for 7 business days.
+        <br><strong>Seller payout:</strong> K ${order.sellerPayout.toLocaleString()} after 5% Pasampo commission of K ${order.commissionAmount.toLocaleString()}.
       </div>
 
       <div class="flex gap-3">
@@ -2262,14 +2329,14 @@ function showToast(msg) {
 <script>
 // ─── DATA ──────────────────────────────────────────────────────
 const PRODUCTS = [
-  {id:1,title:"Samsung Galaxy A54 5G – Excellent Condition",price:2800,origPrice:3200,cat:"phones",cond:"Used – Like New",loc:"Lusaka, Woodlands",store:"TechHub Lusaka",storeId:"s1",verified:true,rating:4.8,reviews:43,views:87,posted:"2 hours ago",desc:"Samsung Galaxy A54 5G, 256GB storage, 8GB RAM. Comes with original box, charger and 2 screen protectors. No scratches, battery at 96%. Selling because I upgraded.",prev:{low:2400,high:3100,avg:2750}},
-  {id:2,title:"iPhone 13 – 128GB – Midnight Black",price:8500,origPrice:null,cat:"phones",cond:"Used – Good",loc:"Lusaka, Kabulonga",store:"Apple Corner ZM",storeId:"s2",verified:true,rating:4.9,reviews:112,views:203,posted:"5 hours ago",desc:"iPhone 13, 128GB. Battery health 89%. Minor scratches on the back, screen perfect. Comes with cable only.",prev:{low:7800,high:9500,avg:8600}},
-  {id:3,title:"Toyota Vitz 2019 – 1.0L – Full Options",price:89000,origPrice:null,cat:"cars",cond:"Used – Good",loc:"Lusaka, Chilenje",store:"Lusaka Auto Deals",storeId:"s3",verified:true,rating:4.6,reviews:28,views:541,posted:"1 day ago",desc:"Toyota Vitz 2019, 1.0L petrol, automatic. 48,000km. Single owner, full service history. No accidents. Reverse camera, alloy wheels.",prev:{low:80000,high:100000,avg:88000}},
-  {id:4,title:"Nike Air Max 270 – Size 43 – Brand New",price:680,origPrice:850,cat:"shoes",cond:"New",loc:"Lusaka, Arcades",store:"Sneaker World ZM",storeId:"s4",verified:true,rating:4.7,reviews:67,views:129,posted:"3 hours ago",desc:"Brand new Nike Air Max 270 in original box. Size EU 43 / UK 9. White/Black colourway. Imported from Dubai.",prev:{low:550,high:800,avg:670}},
-  {id:5,title:"PlayStation 5 – Disc Edition + 2 Controllers",price:6500,origPrice:7200,cat:"electronics",cond:"Used – Like New",loc:"Lusaka, Roma",store:"TechHub Lusaka",storeId:"s1",verified:true,rating:4.8,reviews:43,views:318,posted:"6 hours ago",desc:"PS5 disc edition, 2 DualSense controllers, 6 games included. Purchased Dec 2023. Perfect condition.",prev:{low:5800,high:7000,avg:6400}},
-  {id:6,title:"LG 2-Door Fridge Freezer – 250L",price:4200,origPrice:null,cat:"appliances",cond:"Used – Good",loc:"Lusaka, Libala",store:"Home Essentials ZM",storeId:"s5",verified:false,rating:4.2,reviews:12,views:194,posted:"2 days ago",desc:"LG fridge freezer, 250L. Works perfectly, no dents. Moving abroad so must sell. 3 years old.",prev:{low:3500,high:5000,avg:4200}},
-  {id:7,title:"MacBook Pro M1 – 8GB/256GB – Space Grey",price:12500,origPrice:null,cat:"electronics",cond:"Used – Like New",loc:"Lusaka, Northmead",store:"MacStore Zambia",storeId:"s6",verified:true,rating:5.0,reviews:89,views:412,posted:"4 hours ago",desc:"MacBook Pro M1 2020, 8GB RAM, 256GB SSD. Battery cycles: 142. Original charger and box. Excellent condition.",prev:{low:11000,high:14000,avg:12500}},
-  {id:8,title:"Leather 3-Piece Sofa Set – Brown",price:3800,origPrice:5000,cat:"home",cond:"Used – Good",loc:"Lusaka, Emmasdale",store:"Lusaka Furniture Mart",storeId:"s7",verified:true,rating:4.5,reviews:21,views:267,posted:"3 days ago",desc:"Brown leather 3+2+1 sofa set. 2 years old, minor wear on armrests. Very comfortable. Can deliver in Lusaka for K100.",prev:{low:3000,high:5500,avg:4000}},
+  {id:1,title:"Samsung Galaxy A54 5G – Excellent Condition",price:2800,origPrice:3200,cat:"phones",cond:"Used – Like New",loc:"Lusaka, Woodlands",store:"TechHub Lusaka",storeId:"s1",sellerId:"u-seller-1",saleType:"buy_now",verified:true,rating:4.8,reviews:43,views:87,posted:"2 hours ago",desc:"Samsung Galaxy A54 5G, 256GB storage, 8GB RAM. Comes with original box, charger and 2 screen protectors. No scratches, battery at 96%. Selling because I upgraded.",prev:{low:2400,high:3100,avg:2750}},
+  {id:2,title:"iPhone 13 – 128GB – Midnight Black",price:8500,origPrice:null,cat:"phones",cond:"Used – Good",loc:"Lusaka, Kabulonga",store:"Apple Corner ZM",storeId:"s2",sellerId:"u-seller-2",saleType:"buy_now",verified:true,rating:4.9,reviews:112,views:203,posted:"5 hours ago",desc:"iPhone 13, 128GB. Battery health 89%. Minor scratches on the back, screen perfect. Comes with cable only.",prev:{low:7800,high:9500,avg:8600}},
+  {id:3,title:"Toyota Vitz 2019 – 1.0L – Full Options",price:89000,origPrice:null,cat:"cars",cond:"Used – Good",loc:"Lusaka, Chilenje",store:"Lusaka Auto Deals",storeId:"s3",sellerId:"u-seller-3",saleType:"auction",auctionEnds:"Today 18:00",verified:true,rating:4.6,reviews:28,views:541,posted:"1 day ago",desc:"Toyota Vitz 2019, 1.0L petrol, automatic. 48,000km. Single owner, full service history. No accidents. Reverse camera, alloy wheels.",prev:{low:80000,high:100000,avg:88000}},
+  {id:4,title:"Nike Air Max 270 – Size 43 – Brand New",price:680,origPrice:850,cat:"shoes",cond:"New",loc:"Lusaka, Arcades",store:"Sneaker World ZM",storeId:"s4",sellerId:"u-seller-4",saleType:"buy_now",verified:true,rating:4.7,reviews:67,views:129,posted:"3 hours ago",desc:"Brand new Nike Air Max 270 in original box. Size EU 43 / UK 9. White/Black colourway. Imported from Dubai.",prev:{low:550,high:800,avg:670}},
+  {id:5,title:"PlayStation 5 – Disc Edition + 2 Controllers",price:6500,origPrice:7200,cat:"electronics",cond:"Used – Like New",loc:"Lusaka, Roma",store:"TechHub Lusaka",storeId:"s1",sellerId:"u-seller-1",saleType:"auction",auctionEnds:"Tomorrow 12:00",verified:true,rating:4.8,reviews:43,views:318,posted:"6 hours ago",desc:"PS5 disc edition, 2 DualSense controllers, 6 games included. Purchased Dec 2023. Perfect condition.",prev:{low:5800,high:7000,avg:6400}},
+  {id:6,title:"LG 2-Door Fridge Freezer – 250L",price:4200,origPrice:null,cat:"appliances",cond:"Used – Good",loc:"Lusaka, Libala",store:"Home Essentials ZM",storeId:"s5",sellerId:"u-seller-5",saleType:"buy_now",verified:false,rating:4.2,reviews:12,views:194,posted:"2 days ago",desc:"LG fridge freezer, 250L. Works perfectly, no dents. Moving abroad so must sell. 3 years old.",prev:{low:3500,high:5000,avg:4200}},
+  {id:7,title:"MacBook Pro M1 – 8GB/256GB – Space Grey",price:12500,origPrice:null,cat:"electronics",cond:"Used – Like New",loc:"Lusaka, Northmead",store:"MacStore Zambia",storeId:"s6",sellerId:"u-seller-6",saleType:"buy_now",verified:true,rating:5.0,reviews:89,views:412,posted:"4 hours ago",desc:"MacBook Pro M1 2020, 8GB RAM, 256GB SSD. Battery cycles: 142. Original charger and box. Excellent condition.",prev:{low:11000,high:14000,avg:12500}},
+  {id:8,title:"Leather 3-Piece Sofa Set – Brown",price:3800,origPrice:5000,cat:"home",cond:"Used – Good",loc:"Lusaka, Emmasdale",store:"Lusaka Furniture Mart",storeId:"s7",sellerId:"u-seller-7",saleType:"buy_now",verified:true,rating:4.5,reviews:21,views:267,posted:"3 days ago",desc:"Brown leather 3+2+1 sofa set. 2 years old, minor wear on armrests. Very comfortable. Can deliver in Lusaka for K100.",prev:{low:3000,high:5500,avg:4000}},
 ];
 
 const CATS = [
@@ -2318,6 +2385,69 @@ const CAT_IMAGES = {
 };
 function imagesFor(p) {
   return p.images && p.images.length ? p.images : (PRODUCT_IMAGES[p.id] || [CAT_IMAGES[p.cat] || PRODUCT_IMAGES[1][0]]);
+}
+const COMMISSION_RATE = 0.05;
+const DEMO_USERS = [
+  {id:'u-buyer-1', name:'Chanda Buyer', role:'buyer', email:'buyer@pasampo.demo'},
+  {id:'u-seller-1', name:'TechHub Lusaka', role:'seller', email:'techhub@pasampo.demo'},
+  {id:'u-seller-2', name:'Apple Corner ZM', role:'seller', email:'applecorner@pasampo.demo'},
+  {id:'u-seller-3', name:'Lusaka Auto Deals', role:'seller', email:'autodeals@pasampo.demo'},
+];
+const DB_SCHEMA = {
+  Users:'id, name, email, phone, role, verificationStatus, createdAt',
+  Products:'id, sellerId, categoryId, title, price, saleType, status, currentHighestBid, highestBidderId',
+  Categories:'id, name, slug, parentId, listingCount',
+  Bids:'id, productId, bidderId, amount, previousBidderId, createdAt',
+  Orders:'id, buyerId, sellerId, productId, totalAmount, commissionAmount, sellerPayout, status',
+  Reviews:'id, orderId, buyerId, sellerId, productId, rating, comment, createdAt',
+};
+function storageGet(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+  catch(e) { return fallback; }
+}
+function storageSet(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+function allProducts() { return [...PRODUCTS, ...getSavedListings()]; }
+function getProduct(productId) { return allProducts().find(p => String(p.id) === String(productId)); }
+function getAuctionState(productId) {
+  const p = getProduct(productId);
+  const saved = storageGet('pasampo_bids', {});
+  const fallbackBid = p?.saleType === 'auction' ? Math.round(p.price * 0.9) : p?.price || 0;
+  return saved[productId] || { currentHighestBid: fallbackBid, highestBidderId: null, bidCount: 0, history: [] };
+}
+function saveAuctionState(productId, state) {
+  const all = storageGet('pasampo_bids', {});
+  all[productId] = state;
+  storageSet('pasampo_bids', all);
+}
+function getNotifications() { return storageGet('pasampo_notifications', []); }
+function addNotification(note) {
+  const notes = getNotifications();
+  notes.unshift({ id: Date.now(), time: new Date().toLocaleString(), ...note });
+  storageSet('pasampo_notifications', notes.slice(0, 30));
+}
+function calculateCommission(amount) {
+  return Math.round(amount * COMMISSION_RATE);
+}
+function recordOrder(product, total, method) {
+  const commission = calculateCommission(product.price);
+  const orders = storageGet('pasampo_orders', []);
+  const order = {
+    id: 'ORD-' + Date.now(),
+    buyerId: getUser()?.uid || 'u-buyer-1',
+    sellerId: product.sellerId || product.storeId,
+    productId: product.id,
+    productTitle: product.title,
+    totalAmount: total,
+    itemAmount: product.price,
+    commissionAmount: commission,
+    sellerPayout: product.price - commission,
+    method,
+    status: 'paid',
+    createdAt: new Date().toLocaleString(),
+  };
+  orders.unshift(order);
+  storageSet('pasampo_orders', orders);
+  return order;
 }
 
 // ─── TIER CONSTANTS ──────────────────────────────────────────────
@@ -2391,6 +2521,7 @@ function navigate(page, param) {
   if (page === 'store')   renderStore();
   if (page === 'map')     setTimeout(initMainMap, 80);
   if (page === 'inbox')   renderInbox();
+  if (page === 'admin')   renderAdmin();
 }
 
 // wire up all data-nav clicks
@@ -2411,11 +2542,14 @@ function toggleMenu() {
 function productCard(p, onclick) {
   const disc = p.origPrice ? Math.round(((p.origPrice - p.price)/p.origPrice)*100) : null;
   const imgs = imagesFor(p);
+  const isAuction = p.saleType === 'auction';
+  const auction = isAuction ? getAuctionState(p.id) : null;
+  const displayPrice = isAuction ? auction.currentHighestBid : p.price;
   return `<div class="bg-white rounded-2xl overflow-hidden card-hover cursor-pointer group" style="border:1px solid #eef2f7;box-shadow:0 2px 8px rgba(0,0,0,.05)" onclick="${onclick}">
     <div class="relative h-48 overflow-hidden photo-tile">
       <img class="prod-img" src="${imgs[0]}" alt="${p.title}" loading="lazy" />
       ${disc ? `<div class="absolute top-2.5 left-2.5"><span class="text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm" style="background:linear-gradient(135deg,#ef4444,#dc2626)">-${disc}%</span></div>` : ''}
-      <button type="button" onclick="event.stopPropagation();openCheckoutModal(${p.id})" class="absolute bottom-2.5 right-2.5 bg-white text-[#DC2626] text-xs font-black px-3 py-2 rounded-xl shadow-sm hover:bg-red-50">Buy</button>
+      <button type="button" onclick="event.stopPropagation();${isAuction ? `navigate('product',${p.id})` : `addToCart(${p.id})`}" class="absolute bottom-2.5 right-2.5 bg-white text-[#DC2626] text-xs font-black px-3 py-2 rounded-xl shadow-sm hover:bg-red-50">${isAuction?'Bid':'Cart'}</button>
       <div class="absolute top-2.5 right-2.5 flex items-center gap-1 bg-white/92 text-gray-500 text-xs px-2 py-0.5 rounded-full shadow-sm">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         ${p.views}
@@ -2423,14 +2557,15 @@ function productCard(p, onclick) {
     </div>
     <div class="p-3.5">
       <div class="flex items-center justify-between gap-2 mb-2">
-        <span class="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style="background:#f1f5f9;color:#64748b">${p.cond}</span>
+        <span class="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full" style="background:${isAuction?'#fef2f2':'#f1f5f9'};color:${isAuction?'#DC2626':'#64748b'}">${isAuction?'Auction':'Buy It Now'}</span>
         <span class="text-[10px] font-bold text-blue-700 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-600"></span>In stock</span>
       </div>
       <h3 class="font-bold text-sm text-gray-950 lc2 leading-snug mb-2">${p.title}</h3>
       <div class="flex items-baseline gap-2 mb-2">
-        <span class="text-lg font-black" style="color:#DC2626">K ${p.price.toLocaleString()}</span>
+        <span class="text-lg font-black" style="color:#DC2626">K ${displayPrice.toLocaleString()}</span>
         ${p.origPrice ? `<span class="text-xs text-gray-400 line-through font-medium">K ${p.origPrice.toLocaleString()}</span>` : ''}
       </div>
+      ${isAuction ? `<p class="text-[10px] text-gray-500 mb-2">${auction.bidCount} bids · ends ${p.auctionEnds}</p>` : ''}
       <div class="flex gap-1 mb-2">
         ${imgs.slice(0,3).map((img,i)=>`<span class="w-7 h-7 rounded-full border-2 ${i===0?'border-[#DC2626]':'border-white'} shadow-sm overflow-hidden bg-gray-100"><img src="${img}" alt="" class="w-full h-full object-cover" loading="lazy"></span>`).join('')}
       </div>
@@ -2448,6 +2583,145 @@ function productCard(p, onclick) {
       <p class="text-[10px] text-gray-400 mt-1 truncate">Lightning deal · ${p.posted} · ${p.store}</p>
     </div>
   </div>`;
+}
+
+function getCart() { return storageGet('pasampo_cart', []); }
+function saveCart(items) { storageSet('pasampo_cart', items); updateCartBadge(); }
+function updateCartBadge() {
+  const badge = document.getElementById('cart-badge');
+  if (!badge) return;
+  const count = getCart().length;
+  badge.textContent = count;
+  badge.classList.toggle('hidden', count === 0);
+  badge.classList.toggle('flex', count > 0);
+}
+function addToCart(productId) {
+  const p = getProduct(productId);
+  if (!p) return;
+  if (p.saleType === 'auction') {
+    showToast('Auction items use bidding instead of cart checkout.');
+    navigate('product', productId);
+    return;
+  }
+  const cart = getCart();
+  if (!cart.includes(productId)) cart.push(productId);
+  saveCart(cart);
+  showToast('Added to cart: ' + p.title.slice(0, 36));
+}
+function removeFromCart(productId) {
+  saveCart(getCart().filter(id => String(id) !== String(productId)));
+  renderCart();
+}
+function openCartModal() {
+  document.getElementById('cart-modal').style.display = 'block';
+  renderCart();
+}
+function closeCartModal() { document.getElementById('cart-modal').style.display = 'none'; }
+function renderCart() {
+  const el = document.getElementById('cart-body');
+  if (!el) return;
+  const products = getCart().map(id => getProduct(id)).filter(Boolean);
+  if (!products.length) {
+    el.innerHTML = `<div class="text-center py-8"><p class="font-bold text-gray-900 mb-1">Your cart is empty</p><p class="text-sm text-gray-500 mb-5">Add Buy It Now items from the marketplace.</p><button onclick="closeCartModal();navigate('browse')" class="text-white font-bold px-5 py-3 rounded-xl" style="background:#DC2626">Browse Listings</button></div>`;
+    return;
+  }
+  const total = products.reduce((sum,p)=>sum+p.price,0);
+  el.innerHTML = `
+    <div class="space-y-3 mb-5">${products.map(p=>`
+      <div class="flex gap-3 p-3 border border-gray-100 rounded-2xl">
+        <img src="${imagesFor(p)[0]}" alt="${p.title}" class="w-16 h-16 object-cover rounded-xl shrink-0">
+        <div class="flex-1 min-w-0"><p class="font-bold text-sm text-gray-900 truncate">${p.title}</p><p class="text-xs text-gray-500">${p.store}</p><p class="font-black text-[#DC2626] mt-1">K ${p.price.toLocaleString()}</p></div>
+        <button onclick="removeFromCart(${p.id})" class="text-xs text-gray-400 hover:text-red-600">Remove</button>
+      </div>`).join('')}</div>
+    <div class="rounded-2xl bg-gray-50 border border-gray-100 p-4 mb-5">
+      <div class="flex justify-between text-sm"><span>Cart subtotal</span><strong>K ${total.toLocaleString()}</strong></div>
+      <p class="text-xs text-gray-500 mt-1">Secure checkout processes each seller order separately in this prototype.</p>
+    </div>
+    <button onclick="checkoutFirstCartItem()" class="w-full text-white font-bold py-4 rounded-xl" style="background:#DC2626">Checkout First Item</button>`;
+}
+function checkoutFirstCartItem() {
+  const first = getCart()[0];
+  if (!first) return;
+  closeCartModal();
+  openCheckoutModal(first);
+}
+function placeBid(productId) {
+  const p = getProduct(productId);
+  if (!p || p.saleType !== 'auction') return;
+  const input = document.getElementById('bid-amount');
+  const amount = Number(input?.value || 0);
+  const state = getAuctionState(productId);
+  const bidderId = getUser()?.uid || 'u-buyer-1';
+  if (amount <= state.currentHighestBid) {
+    showToast('Bid must be higher than K ' + state.currentHighestBid.toLocaleString());
+    return;
+  }
+  const previousBidderId = state.highestBidderId;
+  state.currentHighestBid = amount;
+  state.highestBidderId = bidderId;
+  state.bidCount = (state.bidCount || 0) + 1;
+  state.history = [{ bidderId, amount, previousBidderId, time: new Date().toLocaleString() }, ...(state.history || [])].slice(0, 20);
+  saveAuctionState(productId, state);
+  if (previousBidderId && previousBidderId !== bidderId) {
+    addNotification({ userId: previousBidderId, type:'outbid', message:`You were outbid on ${p.title}. New highest bid: K ${amount.toLocaleString()}` });
+  }
+  showToast('Bid placed. Current highest bid is K ' + amount.toLocaleString());
+  renderProduct();
+}
+
+function seedAdminDemo() {
+  const p = getProduct(1);
+  recordOrder(p, p.price + PLATFORM_FEE_K + BIKER_FEE_K, 'stripe');
+  addNotification({ userId:'admin', type:'dispute', message:'Buyer opened a delivery timing dispute for demo order.' });
+  renderAdmin();
+  showToast('Demo sale and dispute added to admin.');
+}
+function renderAdmin() {
+  const el = document.getElementById('admin-content');
+  if (!el) return;
+  const products = allProducts();
+  const orders = storageGet('pasampo_orders', []);
+  const notes = getNotifications();
+  const gross = orders.reduce((s,o)=>s + (o.totalAmount || 0), 0);
+  const commission = orders.reduce((s,o)=>s + (o.commissionAmount || 0), 0);
+  const activeAuctions = products.filter(p => p.saleType === 'auction').length;
+  el.innerHTML = `
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      ${[
+        ['Active listings', products.length],
+        ['Total sales', 'K ' + gross.toLocaleString()],
+        ['5% commission', 'K ' + commission.toLocaleString()],
+        ['Open auctions', activeAuctions],
+      ].map(([label,value])=>`<div class="bg-white border border-gray-100 rounded-2xl p-5"><p class="text-xs text-gray-400 font-bold uppercase">${label}</p><p class="text-2xl font-black text-gray-950 mt-1">${value}</p></div>`).join('')}
+    </div>
+    <div class="grid lg:grid-cols-3 gap-5 mb-6">
+      <div class="lg:col-span-2 bg-white border border-gray-100 rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4"><h2 class="font-black text-gray-950">Active Listings</h2><span class="text-xs text-gray-400">${products.length} total</span></div>
+        <div class="overflow-x-auto"><table class="w-full text-sm">
+          <thead><tr class="text-left text-xs text-gray-400 border-b"><th class="py-2">Item</th><th>Seller</th><th>Type</th><th>Price/Bid</th><th>Status</th></tr></thead>
+          <tbody>${products.map(p=>{ const a=p.saleType==='auction'?getAuctionState(p.id):null; return `<tr class="border-b border-gray-50"><td class="py-3 font-semibold text-gray-900">${p.title.slice(0,34)}${p.title.length>34?'…':''}</td><td>${p.store}</td><td><span class="px-2 py-1 rounded-full text-[10px] font-black ${p.saleType==='auction'?'bg-red-50 text-red-700':'bg-gray-100 text-gray-600'}">${p.saleType==='auction'?'Auction':'Buy Now'}</span></td><td class="font-bold">K ${(a?a.currentHighestBid:p.price).toLocaleString()}</td><td class="text-green-600 font-semibold">Active</td></tr>`}).join('')}</tbody>
+        </table></div>
+      </div>
+      <div class="bg-white border border-gray-100 rounded-2xl p-5">
+        <h2 class="font-black text-gray-950 mb-4">Users</h2>
+        <div class="space-y-3">${DEMO_USERS.map(u=>`<div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div><p class="font-bold text-sm">${u.name}</p><p class="text-xs text-gray-400">${u.email}</p></div><span class="text-[10px] font-black px-2 py-1 rounded-full ${u.role==='seller'?'bg-red-50 text-red-700':'bg-blue-50 text-blue-700'}">${u.role}</span></div>`).join('')}</div>
+      </div>
+    </div>
+    <div class="grid lg:grid-cols-2 gap-5 mb-6">
+      <div class="bg-white border border-gray-100 rounded-2xl p-5">
+        <h2 class="font-black text-gray-950 mb-4">Orders & Seller Payouts</h2>
+        ${orders.length ? `<div class="space-y-3">${orders.slice(0,6).map(o=>`<div class="border border-gray-100 rounded-xl p-3"><div class="flex justify-between gap-3"><p class="font-bold text-sm text-gray-900">${o.productTitle.slice(0,40)}…</p><span class="text-green-600 font-black">Paid</span></div><p class="text-xs text-gray-500 mt-1">Buyer paid K ${o.totalAmount.toLocaleString()} · commission K ${o.commissionAmount.toLocaleString()} · seller payout K ${o.sellerPayout.toLocaleString()}</p></div>`).join('')}</div>` : '<p class="text-sm text-gray-400">No orders yet. Use “Generate Demo Sale” or complete checkout.</p>'}
+      </div>
+      <div class="bg-white border border-gray-100 rounded-2xl p-5">
+        <h2 class="font-black text-gray-950 mb-4">Disputes & Notifications</h2>
+        ${notes.length ? `<div class="space-y-3">${notes.slice(0,6).map(n=>`<div class="border border-gray-100 rounded-xl p-3"><p class="font-bold text-sm text-gray-900">${n.type}</p><p class="text-xs text-gray-500">${n.message}</p><p class="text-[10px] text-gray-400 mt-1">${n.time}</p></div>`).join('')}</div>` : '<p class="text-sm text-gray-400">No disputes or outbid notifications yet.</p>'}
+      </div>
+    </div>
+    <div class="bg-[#0F172A] text-white rounded-2xl p-5">
+      <h2 class="font-black mb-4">Database Structure</h2>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3">${Object.entries(DB_SCHEMA).map(([table,fields])=>`<div class="bg-white/8 border border-white/10 rounded-xl p-4"><p class="font-black">${table}</p><p class="text-xs text-white/60 mt-2 leading-relaxed">${fields}</p></div>`).join('')}</div>
+      <p class="text-xs text-white/50 mt-4">Relationship map: Users can be buyers and sellers. Products belong to seller Users and Categories. Bids belong to Products and bidder Users. Orders map buyerId, sellerId, and productId so sellers track sold items and buyers track purchase history. Reviews attach to completed Orders.</p>
+    </div>`;
 }
 
 // ─── HOME ────────────────────────────────────────────────────────
@@ -2486,7 +2760,7 @@ function renderBrowseCats() {
 function renderBrowseGrid() {
   const search = (document.getElementById('browse-search')||{value:''}).value.toLowerCase();
   const sort = (document.getElementById('browse-sort')||{value:'newest'}).value;
-  let list = PRODUCTS.filter(p => {
+  let list = allProducts().filter(p => {
     const matchCat = browseCat === 'all' || p.cat === browseCat;
     const matchSearch = !search || p.title.toLowerCase().includes(search) || p.loc.toLowerCase().includes(search);
     return matchCat && matchSearch;
@@ -2507,11 +2781,14 @@ function renderBrowseGrid() {
 
 // ─── PRODUCT ─────────────────────────────────────────────────────
 function renderProduct() {
-  const p = PRODUCTS.find(x => x.id === currentProduct);
+  const p = getProduct(currentProduct);
   if (!p) return;
   const imgs = imagesFor(p);
   const priceAbove = p.price > p.prev.avg;
   const pct = Math.abs(Math.round(((p.price - p.prev.avg)/p.prev.avg)*100));
+  const isAuction = p.saleType === 'auction';
+  const auction = isAuction ? getAuctionState(p.id) : null;
+  const displayPrice = isAuction ? auction.currentHighestBid : p.price;
   document.getElementById('product-content').innerHTML = `
     <nav class="flex items-center gap-1.5 text-xs text-gray-500 mb-5">
       <span data-nav="home" class="hover:text-[#DC2626] cursor-pointer">Home</span> ›
@@ -2541,9 +2818,20 @@ function renderProduct() {
         </div>
         <h1 class="text-2xl font-bold text-gray-900 mb-3">${p.title}</h1>
         <div class="flex items-baseline gap-3 mb-2">
-          <span class="text-3xl font-black" style="color:#DC2626">K ${p.price.toLocaleString()}</span>
+          <span class="text-3xl font-black" style="color:#DC2626">K ${displayPrice.toLocaleString()}</span>
           ${p.origPrice ? `<span class="text-lg text-gray-400 line-through">K ${p.origPrice.toLocaleString()}</span>` : ''}
         </div>
+        ${isAuction ? `<div class="rounded-2xl p-4 mb-4 bg-red-50 border border-red-100">
+          <div class="flex items-center justify-between mb-3">
+            <div><p class="text-xs font-black uppercase tracking-wider text-red-600">Live auction</p><p class="text-sm text-gray-600">${auction.bidCount} bids · ends ${p.auctionEnds}</p></div>
+            <span class="text-xs font-bold text-gray-500">Highest bidder: ${auction.highestBidderId || 'None yet'}</span>
+          </div>
+          <div class="flex gap-2">
+            <input id="bid-amount" type="number" min="${auction.currentHighestBid + 50}" value="${auction.currentHighestBid + 50}" class="flex-1 border-2 border-red-100 rounded-xl px-4 py-3 text-sm font-bold" />
+            <button onclick="placeBid(${p.id})" class="text-white font-bold px-5 py-3 rounded-xl" style="background:#DC2626">Place Bid</button>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">Minimum next bid: K ${(auction.currentHighestBid + 50).toLocaleString()}. Previous highest bidder is notified when outbid.</p>
+        </div>` : ''}
         <div class="flex items-center gap-2 text-sm px-3 py-2 rounded-xl mb-4 ${priceAbove?'bg-amber-50 text-amber-700':'bg-green-50 text-green-700'}">
           ${priceAbove?'⚠️':'✅'}
           ${priceAbove ? `${pct}% above market avg (K${p.prev.avg.toLocaleString()})` : `${pct}% below market avg — great deal!`}
@@ -2571,9 +2859,11 @@ function renderProduct() {
             <span class="text-sm font-bold" style="color:#DC2626">K80</span>
           </div>
         </div>
-        <p class="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2 mb-4">💡 A flat <strong>$1 platform fee</strong> applies to every completed sale.</p>
+        <p class="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2 mb-4">Pasampo deducts a <strong>5% seller commission</strong> at checkout. Buyer still sees transparent checkout fees and delivery.</p>
         <div class="flex gap-3">
-          <button class="flex-1 text-white font-bold py-3.5 rounded-xl transition-colors" style="background:#DC2626" onclick="openCheckoutModal(${p.id})">📦 Buy Now</button>
+          ${isAuction
+            ? `<button class="flex-1 text-white font-bold py-3.5 rounded-xl transition-colors" style="background:#DC2626" onclick="placeBid(${p.id})">Place Bid</button>`
+            : `<button class="flex-1 border-2 border-[#DC2626] text-[#DC2626] font-bold py-3.5 rounded-xl transition-colors hover:bg-red-50" onclick="addToCart(${p.id})">Add to Cart</button><button class="flex-1 text-white font-bold py-3.5 rounded-xl transition-colors" style="background:#DC2626" onclick="openCheckoutModal(${p.id})">Buy Now</button>`}
           <button class="flex-1 border-2 border-gray-200 hover:border-[#DC2626] text-gray-700 font-bold py-3.5 rounded-xl transition-colors" onclick="openMessage(${p.id})">💬 Message Seller</button>
         </div>
       </div>
@@ -3232,7 +3522,7 @@ function openMessage(productId) {
     }, 0);
     return;
   }
-  const p = PRODUCTS.find(x => x.id === productId);
+  const p = getProduct(productId);
   if (!p) return;
   const convos = getConvos();
   let convo = convos.find(c => c.productId === productId);
@@ -3431,6 +3721,7 @@ renderHomeLists = function() {
 renderHomeLists();
 renderAuthBtn();
 navigate('home');
+updateCartBadge();
 </script>
 </body>
 </html>
