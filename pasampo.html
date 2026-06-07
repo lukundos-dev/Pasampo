@@ -162,6 +162,57 @@
       border: 1px solid #eef2f7;
       border-top: 0;
     }
+    .fly-to-cart {
+      position: fixed;
+      width: 96px;
+      height: 96px;
+      border-radius: 20px;
+      object-fit: cover;
+      z-index: 999;
+      pointer-events: none;
+      box-shadow: 0 18px 38px rgba(15,23,42,.22);
+      transition: transform .48s cubic-bezier(.74,.18,.2,1), opacity .48s ease;
+    }
+    .cart-impact {
+      animation: cartImpact .42s cubic-bezier(.22,1,.36,1);
+    }
+    @keyframes cartImpact {
+      0% { transform: translateY(0) scale(1); }
+      35% { transform: translateY(-5px) scale(1.08); }
+      100% { transform: translateY(0) scale(1); }
+    }
+    .ps-alert {
+      position: relative;
+      display: grid;
+      width: 100%;
+      gap: 2px;
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      color: #111827;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 13px;
+      box-shadow: 0 14px 34px rgba(15,23,42,.12);
+    }
+    .ps-alert.has-icon { grid-template-columns: auto 1fr; column-gap: 10px; }
+    .ps-alert-icon { grid-row: span 2; margin-top: 2px; color: currentColor; }
+    .ps-alert-title { font-weight: 800; line-height: 1.25; }
+    .ps-alert-description { color: #64748b; line-height: 1.45; }
+    .ps-alert-action { position: absolute; top: 8px; right: 8px; }
+    .ps-alert-success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+    .ps-alert-warning { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+    .ps-alert-error { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+    .ps-alert-info { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+    .ps-alert-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 700;
+      width: min(420px, calc(100vw - 32px));
+      transform: translateX(-50%);
+      animation: toastIn .28s ease;
+    }
 
     /* ── Feature card ──────────────────────────────────── */
     .feat-card {
@@ -725,6 +776,21 @@
 <!-- ──────────── PAGE: PRODUCT ──────────── -->
 <div id="page-product" class="page">
   <div id="product-content" class="max-w-6xl mx-auto px-4 py-8"></div>
+</div>
+
+<!-- ──────────── PAGE: CHECKOUT ──────────── -->
+<div id="page-checkout" class="page">
+  <div class="max-w-5xl mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
+      <div>
+        <p class="text-xs font-black uppercase tracking-wider text-[#DC2626]">Secure buyer checkout</p>
+        <h1 class="text-2xl font-black text-gray-950">Checkout</h1>
+        <p class="text-sm text-gray-500 mt-1">Your cart is linked to your signed-in Pasampo account.</p>
+      </div>
+      <span class="text-xs font-bold text-gray-500 bg-white border border-gray-100 rounded-full px-4 py-2">Airtel · MTN Money · Stripe</span>
+    </div>
+    <div id="checkout-content"></div>
+  </div>
 </div>
 
 <!-- ──────────── PAGE: SELL ──────────── -->
@@ -1375,6 +1441,10 @@ function openCheckoutModal(productId) {
     navigate('product', productId);
     return;
   }
+  if (!getUser()) {
+    requireAuth('checkout', productId, { addToCart: productId });
+    return;
+  }
   coStep = 1; coDelivery = 'biker'; coNetwork = 'airtel'; coPhone = ''; coStripeEmail = ''; coHubId = null; coAgreed = false; coRecordedOrder = null;
   document.getElementById('checkout-modal').style.display = 'block';
   document.body.style.overflow = 'hidden';
@@ -1456,9 +1526,11 @@ function renderCoStep1() {
         <span>Total</span>
         <span id="co-total" style="color:#DC2626">K ${tot.toLocaleString()}</span>
       </div>
-      <div class="rounded-xl bg-red-50 border border-red-100 p-3 text-xs text-red-700">
-        Seller commission: Pasampo deducts 5% (K ${commission.toLocaleString()}) from the seller payout after payment. Buyer total is unchanged.
-      </div>
+      ${renderAlert({
+        title: 'Seller commission',
+        description: `Pasampo deducts 5% (K ${commission.toLocaleString()}) from the seller payout after payment. Buyer total is unchanged.`,
+        variant: 'info'
+      })}
     </div>
 
     <!-- Delivery toggle -->
@@ -1926,23 +1998,26 @@ function friendlyAuthError(error) {
   return error?.message || 'Authentication failed. Please try again.';
 }
 
-function requireAuth(page, param) {
+function requireAuth(page, param, extra = {}) {
   if (getUser()) return true;
-  pendingAuthAction = { page, param: param || null };
+  pendingAuthAction = { page, param: param || null, ...extra };
   openAuthModal('signup');
   const label =
     page === 'sell' ? 'start selling' :
     page === 'verify' ? 'submit verification documents' :
     page === 'map' ? 'view the Lusaka dispatch map' :
     page === 'inbox' ? 'open your inbox' :
+    page === 'checkout' ? 'complete checkout' :
     'continue';
   setTimeout(() => {
     const body = document.getElementById('auth-body');
     if (body) {
-      body.insertAdjacentHTML('afterbegin', `
-        <div class="bg-red-50 border border-red-100 rounded-2xl p-3 mb-4 text-sm text-red-800">
-          Create your Pasampo profile first, then you can ${label}. You can still browse listings publicly while your account gets set up.
-        </div>`);
+      body.insertAdjacentHTML('afterbegin', renderAlert({
+        title: 'Account required',
+        description: `Create your Pasampo profile first, then you can ${label}. You can still browse listings publicly while your account gets set up.`,
+        variant: 'warning',
+        className: 'mb-4'
+      }));
     }
   }, 0);
   return false;
@@ -1951,6 +2026,7 @@ function requireAuth(page, param) {
 function completePendingAuthAction() {
   const next = pendingAuthAction;
   pendingAuthAction = null;
+  if (next?.addToCart) addToCartToStorage(next.addToCart);
   if (next?.becomeSeller) {
     becomeSeller();
     return;
@@ -1969,10 +2045,12 @@ function becomeSeller() {
     setTimeout(() => {
       const body = document.getElementById('auth-body');
       if (body) {
-        body.insertAdjacentHTML('afterbegin', `
-          <div class="bg-red-50 border border-red-100 rounded-2xl p-3 mb-4 text-sm text-red-800">
-            Create your Pasampo profile first, then your seller store will be activated.
-          </div>`);
+        body.insertAdjacentHTML('afterbegin', renderAlert({
+          title: 'Seller profile required',
+          description: 'Create your Pasampo profile first, then your seller store will be activated.',
+          variant: 'warning',
+          className: 'mb-4'
+        }));
       }
     }, 0);
     return;
@@ -2271,14 +2349,41 @@ async function sendPasswordReset() {
   }
 }
 
-// ─── TOAST NOTIFICATION ───────────────────────────────────────────
-function showToast(msg) {
+// ─── ALERT + TOAST NOTIFICATION ──────────────────────────────────
+function alertIcon(variant) {
+  const color = variant === 'success' ? '#16a34a' : variant === 'warning' ? '#d97706' : variant === 'error' ? '#dc2626' : '#2563eb';
+  if (variant === 'success') return `<svg class="ps-alert-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
+  if (variant === 'warning') return `<svg class="ps-alert-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`;
+  if (variant === 'error') return `<svg class="ps-alert-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`;
+  return `<svg class="ps-alert-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
+}
+function renderAlert({ title = '', description = '', variant = 'info', action = '', className = '' }) {
+  return `<div role="alert" data-slot="alert" class="ps-alert ps-alert-${variant} has-icon ${className}">
+    ${alertIcon(variant)}
+    ${title ? `<div data-slot="alert-title" class="ps-alert-title">${title}</div>` : ''}
+    ${description ? `<div data-slot="alert-description" class="ps-alert-description">${description}</div>` : ''}
+    ${action ? `<div data-slot="alert-action" class="ps-alert-action">${action}</div>` : ''}
+  </div>`;
+}
+function toastVariant(msg) {
+  const s = String(msg).toLowerCase();
+  if (s.includes('failed') || s.includes('error') || s.includes('incorrect') || s.includes('please')) return 'error';
+  if (s.includes('skip') || s.includes('warning') || s.includes('auction')) return 'warning';
+  if (s.includes('added') || s.includes('welcome') || s.includes('signed') || s.includes('bid placed') || s.includes('activated') || s.includes('sent')) return 'success';
+  return 'info';
+}
+function showToast(msg, variant) {
   const t = document.createElement('div');
-  t.className = 'fixed bottom-6 left-1/2 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-2xl z-50 text-center';
-  t.style.cssText = 'background:#0F172A;transform:translateX(-50%);min-width:260px;animation:fadeIn .3s ease';
-  t.textContent = msg;
+  const v = variant || toastVariant(msg);
+  t.className = 'ps-alert-toast';
+  t.innerHTML = renderAlert({
+    title: v === 'success' ? 'Success' : v === 'warning' ? 'Heads up' : v === 'error' ? 'Action needed' : 'Pasampo',
+    description: msg,
+    variant: v,
+    action: '<button onclick="this.closest(\'.ps-alert-toast\').remove()" class="text-current font-black px-2">×</button>'
+  });
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3500);
+  setTimeout(() => t.remove(), 4200);
 }
 </script>
 
@@ -2494,7 +2599,7 @@ let kycStep = 1; let kycIdType = null; let kycFront = false; let kycBack = false
 
 // ─── NAVIGATION ──────────────────────────────────────────────────
 function navigate(page, param) {
-  if ((page === 'sell' || page === 'verify' || page === 'map' || page === 'inbox') && !requireAuth(page, param)) return;
+  if ((page === 'sell' || page === 'verify' || page === 'map' || page === 'inbox' || page === 'checkout') && !requireAuth(page, param)) return;
   if (page === 'sell') {
     const ss = getStoreSettings();
     if (!ss.isSeller) {
@@ -2516,6 +2621,7 @@ function navigate(page, param) {
   if (page === 'home')    renderHomeLists();
   if (page === 'browse')  { if (param) browseCat = param; renderBrowseCats(); renderBrowseGrid(); }
   if (page === 'product') { if (param) currentProduct = param; renderProduct(); }
+  if (page === 'checkout') { if (param) addToCartToStorage(param); renderCheckoutPage(); }
   if (page === 'sell')    { sellStep = 1; renderSellQuota(); renderSell(); }
   if (page === 'verify')  { kycStep = 1; renderKyc(); }
   if (page === 'store')   renderStore();
@@ -2549,7 +2655,7 @@ function productCard(p, onclick) {
     <div class="relative h-48 overflow-hidden photo-tile">
       <img class="prod-img" src="${imgs[0]}" alt="${p.title}" loading="lazy" />
       ${disc ? `<div class="absolute top-2.5 left-2.5"><span class="text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm" style="background:linear-gradient(135deg,#ef4444,#dc2626)">-${disc}%</span></div>` : ''}
-      <button type="button" onclick="event.stopPropagation();${isAuction ? `navigate('product',${p.id})` : `addToCart(${p.id})`}" class="absolute bottom-2.5 right-2.5 bg-white text-[#DC2626] text-xs font-black px-3 py-2 rounded-xl shadow-sm hover:bg-red-50">${isAuction?'Bid':'Cart'}</button>
+      <button type="button" onclick="event.stopPropagation();${isAuction ? `navigate('product',${p.id})` : `addToCart(${p.id}, this)`}" class="absolute bottom-2.5 right-2.5 bg-white text-[#DC2626] text-xs font-black px-3 py-2 rounded-xl shadow-sm hover:bg-red-50">${isAuction?'Bid':'Cart'}</button>
       <div class="absolute top-2.5 right-2.5 flex items-center gap-1 bg-white/92 text-gray-500 text-xs px-2 py-0.5 rounded-full shadow-sm">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         ${p.views}
@@ -2595,7 +2701,40 @@ function updateCartBadge() {
   badge.classList.toggle('hidden', count === 0);
   badge.classList.toggle('flex', count > 0);
 }
-function addToCart(productId) {
+function addToCartToStorage(productId) {
+  const p = getProduct(productId);
+  if (!p || p.saleType === 'auction') return false;
+  const cart = getCart();
+  if (!cart.includes(productId)) cart.push(productId);
+  saveCart(cart);
+  return true;
+}
+function animateToCart(productId, trigger) {
+  const p = getProduct(productId);
+  const cartButton = document.querySelector('button[title="Cart"]');
+  if (!p || !trigger || !cartButton) return;
+  const from = trigger.closest('.card-hover')?.querySelector('img') || trigger;
+  const fromRect = from.getBoundingClientRect();
+  const toRect = cartButton.getBoundingClientRect();
+  const ghost = document.createElement('img');
+  ghost.src = imagesFor(p)[0];
+  ghost.className = 'fly-to-cart';
+  ghost.style.left = fromRect.left + fromRect.width / 2 - 48 + 'px';
+  ghost.style.top = fromRect.top + fromRect.height / 2 - 48 + 'px';
+  document.body.appendChild(ghost);
+  requestAnimationFrame(() => {
+    const dx = toRect.left + toRect.width / 2 - (fromRect.left + fromRect.width / 2);
+    const dy = toRect.top + toRect.height / 2 - (fromRect.top + fromRect.height / 2);
+    ghost.style.transform = `translate(${dx}px, ${dy}px) scale(.22) rotate(8deg)`;
+    ghost.style.opacity = '0';
+  });
+  setTimeout(() => {
+    ghost.remove();
+    cartButton.classList.add('cart-impact');
+    setTimeout(() => cartButton.classList.remove('cart-impact'), 450);
+  }, 520);
+}
+function addToCart(productId, trigger) {
   const p = getProduct(productId);
   if (!p) return;
   if (p.saleType === 'auction') {
@@ -2603,16 +2742,25 @@ function addToCart(productId) {
     navigate('product', productId);
     return;
   }
-  const cart = getCart();
-  if (!cart.includes(productId)) cart.push(productId);
-  saveCart(cart);
-  showToast('Added to cart: ' + p.title.slice(0, 36));
+  if (!getUser()) {
+    requireAuth('checkout', productId, { addToCart: productId });
+    return;
+  }
+  addToCartToStorage(productId);
+  animateToCart(productId, trigger);
+  showToast('Added to checkout: ' + p.title.slice(0, 36));
+  setTimeout(() => navigate('checkout', productId), 520);
 }
 function removeFromCart(productId) {
   saveCart(getCart().filter(id => String(id) !== String(productId)));
-  renderCart();
+  if (currentPage === 'checkout') renderCheckoutPage();
+  else renderCart();
 }
 function openCartModal() {
+  if (!requireAuth('checkout')) return;
+  navigate('checkout');
+}
+function openLegacyCartModal() {
   document.getElementById('cart-modal').style.display = 'block';
   renderCart();
 }
@@ -2643,7 +2791,51 @@ function checkoutFirstCartItem() {
   const first = getCart()[0];
   if (!first) return;
   closeCartModal();
-  openCheckoutModal(first);
+  navigate('checkout', first);
+}
+function renderCheckoutPage() {
+  const el = document.getElementById('checkout-content');
+  if (!el) return;
+  const products = getCart().map(id => getProduct(id)).filter(Boolean);
+  if (!products.length) {
+    el.innerHTML = renderAlert({ title:'Your checkout is empty', description:'Add a Buy It Now item while signed in and it will appear here.', variant:'info' }) +
+      `<div class="mt-5"><button onclick="navigate('browse')" class="text-white font-bold px-5 py-3 rounded-xl" style="background:#DC2626">Browse Listings</button></div>`;
+    return;
+  }
+  const subtotal = products.reduce((sum,p)=>sum+p.price,0);
+  el.innerHTML = `
+    <div class="grid lg:grid-cols-3 gap-5">
+      <div class="lg:col-span-2 bg-white border border-gray-100 rounded-2xl p-5">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <h2 class="font-black text-gray-950">Items ready for checkout</h2>
+          <span class="text-xs font-bold text-gray-500 bg-gray-50 border border-gray-100 rounded-full px-3 py-1">${products.length} item${products.length === 1 ? '' : 's'}</span>
+        </div>
+        <div class="space-y-3">${products.map(p=>`
+          <div class="flex flex-col sm:flex-row gap-3 p-3 border border-gray-100 rounded-2xl">
+            <img src="${imagesFor(p)[0]}" alt="${p.title}" class="w-20 h-20 object-cover rounded-xl shrink-0">
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-sm text-gray-900">${p.title}</p>
+              <p class="text-xs text-gray-500 mt-1">${p.store} · ${p.loc}</p>
+              <p class="font-black text-[#DC2626] mt-1">K ${p.price.toLocaleString()}</p>
+            </div>
+            <div class="flex sm:flex-col gap-2 sm:items-end">
+              <button onclick="openCheckoutModal(${p.id})" class="text-xs text-white font-bold px-3 py-2 rounded-xl" style="background:#DC2626">Pay this item</button>
+              <button onclick="removeFromCart(${p.id})" class="text-xs text-gray-400 hover:text-red-600 px-2 py-1">Remove</button>
+            </div>
+          </div>`).join('')}</div>
+      </div>
+      <aside class="bg-white border border-gray-100 rounded-2xl p-5 h-fit">
+        <h2 class="font-black text-gray-950 mb-4">Checkout summary</h2>
+        <div class="space-y-2 text-sm mb-4">
+          <div class="flex justify-between"><span>Subtotal</span><strong>K ${subtotal.toLocaleString()}</strong></div>
+          <div class="flex justify-between"><span>Platform fee</span><strong>K ${PLATFORM_FEE_K}</strong></div>
+          <div class="flex justify-between"><span>Biker delivery</span><strong>from K ${BIKER_FEE_K}</strong></div>
+        </div>
+        ${renderAlert({ title:'Secure checkout', description:'Select an item to complete payment with Airtel Money, MTN Money, or Stripe.', variant:'success', className:'mb-4' })}
+        <button onclick="openCheckoutModal(${products[0].id})" class="w-full text-white font-bold py-4 rounded-xl" style="background:#DC2626">Pay first item</button>
+        <button onclick="navigate('browse')" class="w-full mt-3 border-2 border-gray-200 text-gray-700 font-bold py-3.5 rounded-xl hover:border-[#DC2626] hover:text-[#DC2626]">Add more items</button>
+      </aside>
+    </div>`;
 }
 function placeBid(productId) {
   const p = getProduct(productId);
@@ -2863,7 +3055,7 @@ function renderProduct() {
         <div class="flex gap-3">
           ${isAuction
             ? `<button class="flex-1 text-white font-bold py-3.5 rounded-xl transition-colors" style="background:#DC2626" onclick="placeBid(${p.id})">Place Bid</button>`
-            : `<button class="flex-1 border-2 border-[#DC2626] text-[#DC2626] font-bold py-3.5 rounded-xl transition-colors hover:bg-red-50" onclick="addToCart(${p.id})">Add to Cart</button><button class="flex-1 text-white font-bold py-3.5 rounded-xl transition-colors" style="background:#DC2626" onclick="openCheckoutModal(${p.id})">Buy Now</button>`}
+            : `<button class="flex-1 border-2 border-[#DC2626] text-[#DC2626] font-bold py-3.5 rounded-xl transition-colors hover:bg-red-50" onclick="addToCart(${p.id}, this)">Add to Cart</button><button class="flex-1 text-white font-bold py-3.5 rounded-xl transition-colors" style="background:#DC2626" onclick="openCheckoutModal(${p.id})">Buy Now</button>`}
           <button class="flex-1 border-2 border-gray-200 hover:border-[#DC2626] text-gray-700 font-bold py-3.5 rounded-xl transition-colors" onclick="openMessage(${p.id})">💬 Message Seller</button>
         </div>
       </div>
@@ -3514,10 +3706,12 @@ function openMessage(productId) {
     setTimeout(() => {
       const body = document.getElementById('auth-body');
       if (body) {
-        body.insertAdjacentHTML('afterbegin', `
-          <div class="bg-red-50 border border-red-100 rounded-2xl p-3 mb-4 text-sm text-red-800">
-            Create your Pasampo profile first, then your message thread will open automatically.
-          </div>`);
+        body.insertAdjacentHTML('afterbegin', renderAlert({
+          title: 'Account required',
+          description: 'Create your Pasampo profile first, then your message thread will open automatically.',
+          variant: 'warning',
+          className: 'mb-4'
+        }));
       }
     }, 0);
     return;
