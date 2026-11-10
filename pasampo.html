@@ -1054,6 +1054,7 @@
 </style>
 
 <!-- ═══ FIREBASE AUTH SDK ═══ -->
+<script src="assets/account-session.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script>
@@ -1069,28 +1070,19 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
 
-  function publicUserFromFirebase(user, extra = {}) {
-    return {
-      uid: user.uid,
-      name: extra.name || user.displayName || user.email?.split("@")[0] || "Pasampo User",
-      phone: extra.phone || user.phoneNumber || "",
-      email: user.email || extra.email || "",
-      provider: extra.provider || user.providerData?.[0]?.providerId || "password",
-      verificationStatus: extra.verificationStatus || "not_started",
-      joinedAt: new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" })
-    };
-  }
-
   window.PasampoFirebaseAuth = {
     ready: true,
     async signUp({ name, phone, email, password }) {
       const credential = await auth.createUserWithEmailAndPassword(email, password);
       await credential.user.updateProfile({ displayName: name });
-      return publicUserFromFirebase(credential.user, { name, phone: "+260" + phone, email });
+      window.PasampoSession.setFirebaseUser(credential.user);
+      window.PasampoSession.saveProfile({ ...window.PasampoSession.getUser(), phone: "+260" + phone });
+      return window.PasampoSession.getUser();
     },
     async signIn({ email, password }) {
       const credential = await auth.signInWithEmailAndPassword(email, password);
-      return publicUserFromFirebase(credential.user);
+      window.PasampoSession.setFirebaseUser(credential.user);
+      return window.PasampoSession.getUser();
     },
     async resetPassword(email) {
       await auth.sendPasswordResetEmail(email);
@@ -1100,7 +1092,8 @@
       if (providerName === "Google") provider = new firebase.auth.GoogleAuthProvider();
       if (!provider) throw new Error("Unsupported provider");
       const credential = await auth.signInWithPopup(provider);
-      return publicUserFromFirebase(credential.user, { provider: providerName });
+      window.PasampoSession.setFirebaseUser(credential.user);
+      return window.PasampoSession.getUser();
     },
     async signOut() {
       await auth.signOut();
@@ -1108,22 +1101,10 @@
   };
   document.documentElement.dataset.firebaseAuth = "ready";
 
-  auth.onAuthStateChanged((firebaseUser) => {
-    if (!firebaseUser) return;
-    const existing = (() => {
-      try { return JSON.parse(localStorage.getItem("pasampo_user") || "null"); }
-      catch(e) { return null; }
-    })();
-    const merged = {
-      ...publicUserFromFirebase(firebaseUser),
-      ...(existing || {}),
-      uid: firebaseUser.uid,
-      email: firebaseUser.email || existing?.email || "",
-      name: existing?.name || firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Pasampo User"
-    };
-    localStorage.setItem("pasampo_user", JSON.stringify(merged));
-    if (typeof renderAuthBtn === "function") renderAuthBtn();
-  });
+  auth.onAuthStateChanged(
+    user => window.PasampoSession.setFirebaseUser(user),
+    () => window.PasampoSession.setFirebaseUser(null)
+  );
 </script>
 
 <!-- ═══ CHECKOUT + REFUND LOGIC ═══ -->
@@ -1294,9 +1275,16 @@ function renderCoStep2() {
 }
 
 function submitLencoPlaceholder() {
+  const ownerUid = getUser()?.uid;
+  const productId = coProduct?.id;
+  if (!ownerUid || !productId) return;
   const btn = document.querySelector('#co-body button[onclick="submitLencoPlaceholder()"]');
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner">⏳</span> Processing...'; }
-  setTimeout(() => { coStep = 3; renderCoStep(); }, 900);
+  setTimeout(() => {
+    if (getUser()?.uid !== ownerUid || coProduct?.id !== productId) return;
+    coStep = 3;
+    renderCoStep();
+  }, 900);
 }
 
 function renderCoStep3() {
@@ -1352,18 +1340,18 @@ let authTab = 'signup'; // 'signup' | 'signin' | 'reset'
 let pendingAuthAction = null;
 
 function getUser() {
-  try { return JSON.parse(localStorage.getItem('pasampo_user') || 'null'); }
-  catch(e) { return null; }
+  return window.PasampoSession?.getUser() || null;
 }
-function saveUser(u) { localStorage.setItem('pasampo_user', JSON.stringify(u)); }
+function saveUser(u) { return window.PasampoSession?.saveProfile(u); }
 async function signOut() {
   try {
     if (window.PasampoFirebaseAuth?.ready) await window.PasampoFirebaseAuth.signOut();
   } catch(e) {
     console.warn('Firebase sign out failed:', e);
+    showToast('Could not sign out. Please try again.', 'error');
+    return;
   }
-  localStorage.removeItem('pasampo_user');
-  renderAuthBtn();
+  window.PasampoSession.setFirebaseUser(null);
 }
 
 function friendlyAuthError(error) {
@@ -1380,6 +1368,10 @@ function friendlyAuthError(error) {
 
 function requireAuth(page, param, extra = {}) {
   if (getUser()) return true;
+  if (!window.PasampoSession?.ready) {
+    showToast('Still checking your sign-in. Please try again in a moment.', 'info');
+    return false;
+  }
   pendingAuthAction = { page, param: param || null, ...extra };
   openAuthModal('signup');
   const label =
@@ -1677,8 +1669,7 @@ async function doSignIn() {
 
   try {
     const user = await window.PasampoFirebaseAuth.signIn({ email, password: pass });
-    const existing = getUser();
-    saveUser({ ...(existing || {}), ...user, verificationStatus: existing?.verificationStatus || user.verificationStatus || 'not_started' });
+    saveUser(user);
     closeAuthModal();
     renderAuthBtn();
     showToast('👋 Welcome back, ' + user.name.split(' ')[0] + '!');
@@ -1695,8 +1686,7 @@ async function socialSignUp(provider) {
   }
   try {
     const user = await window.PasampoFirebaseAuth.social(provider);
-    const existing = getUser();
-    saveUser({ ...(existing || {}), ...user, verificationStatus: existing?.verificationStatus || 'not_started' });
+    saveUser(user);
     closeAuthModal();
     renderAuthBtn();
     showToast('✅ Signed in with ' + provider + '. Profile created.');
@@ -1883,10 +1873,9 @@ const DB_SCHEMA = {
   Reviews:'id, orderId, buyerId, sellerId, productId, rating, comment, createdAt',
 };
 function storageGet(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
-  catch(e) { return fallback; }
+  return window.PasampoSession.read(key, fallback);
 }
-function storageSet(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+function storageSet(key, value) { return window.PasampoSession.write(key, value); }
 function allProducts() { return [...PRODUCTS, ...getSavedListings()]; }
 function getProduct(productId) { return allProducts().find(p => String(p.id) === String(productId)); }
 function getNotifications() { return storageGet('pasampo_notifications', []); }
@@ -1899,7 +1888,7 @@ function calculateCommission(amount) {
   return Math.round(amount * COMMISSION_RATE);
 }
 function hasTierOneIdentity(p) {
-  return p.identityVerified === true || p.verified === true;
+  return PRODUCTS.includes(p) && p.identityVerified === true;
 }
 function hasTierTwoBadge(p) {
   return hasTierOneIdentity(p) && Number(p.reviews || 0) >= 100 && Number(p.rating || 0) >= 4;
@@ -1953,18 +1942,17 @@ const REVIEWS = {
 // ─── STORE SETTINGS (persisted to localStorage) ──────────────────
 function getStoreSettings() {
   const defaults = {
-    name: 'TechHub Lusaka',
-    catchphrase: 'Your go-to tech store in Lusaka 🛍️',
-    bio: 'We sell genuine phones, laptops and accessories. Every item tested before listing.',
+    name: 'My Store',
+    catchphrase: '',
+    bio: '',
     color: '#DC2626',
     plan: 'free',
-    listingCount: 2,
+    listingCount: 0,
     isSeller: false,
   };
-  try { return Object.assign({}, defaults, JSON.parse(localStorage.getItem('pasampo_store') || '{}')); }
-  catch(e) { return defaults; }
+  return Object.assign({}, defaults, storageGet('pasampo_store', {}));
 }
-function saveStoreSettings(s) { localStorage.setItem('pasampo_store', JSON.stringify(s)); }
+function saveStoreSettings(s) { storageSet('pasampo_store', s); }
 
 // ─── STATE ──────────────────────────────────────────────────────
 let currentPage = 'home';
@@ -1975,7 +1963,7 @@ let kycStep = 1; let kycIdType = null; let kycFront = false; let kycBack = false
 
 // ─── NAVIGATION ──────────────────────────────────────────────────
 function navigate(page, param) {
-  if ((page === 'sell' || page === 'verify' || page === 'inbox' || page === 'checkout') && !requireAuth(page, param)) return;
+  if (['sell', 'verify', 'inbox', 'checkout', 'store', 'admin'].includes(page) && !requireAuth(page, param)) return;
   if (page === 'sell') {
     const ss = getStoreSettings();
     if (!ss.isSeller) {
@@ -2101,7 +2089,8 @@ function addToCart(productId, trigger) {
   addToCartToStorage(productId);
   animateToCart(productId, trigger);
   showToast('Added to checkout: ' + p.title.slice(0, 36));
-  setTimeout(() => navigate('checkout', productId), 520);
+  const ownerUid = getUser().uid;
+  setTimeout(() => { if (getUser()?.uid === ownerUid) navigate('checkout', productId); }, 520);
 }
 function removeFromCart(productId) {
   saveCart(getCart().filter(id => String(id) !== String(productId)));
@@ -2318,7 +2307,7 @@ function renderProduct() {
         <div class="grid grid-cols-3 gap-2 mb-4">
           <div class="rounded-2xl p-3 text-center bg-red-50 border border-red-100"><p class="text-[10px] text-red-500 font-bold uppercase">Checkout</p><p class="text-xs font-black text-gray-900">Lenco ready</p></div>
           <div class="rounded-2xl p-3 text-center bg-gray-50 border border-gray-100"><p class="text-[10px] text-gray-400 font-bold uppercase">Rights</p><p class="text-xs font-black text-gray-900">7-day policy</p></div>
-          <div class="rounded-2xl p-3 text-center bg-green-50 border border-green-100"><p class="text-[10px] text-green-600 font-bold uppercase">Trust</p><p class="text-xs font-black text-gray-900">${hasTierTwoBadge(p)?'Verified':'ID checked'}</p></div>
+          <div class="rounded-2xl p-3 text-center bg-green-50 border border-green-100"><p class="text-[10px] text-green-600 font-bold uppercase">Trust</p><p class="text-xs font-black text-gray-900">${hasTierTwoBadge(p)?'Verified':hasTierOneIdentity(p)?'ID checked':'ID not checked'}</p></div>
         </div>
         <div class="bg-gray-50 rounded-xl p-4 mb-4"><h3 class="font-semibold text-sm text-gray-900 mb-2">Description</h3><p class="text-sm text-gray-600 leading-relaxed">${p.desc}</p></div>
         <div class="bg-white border border-gray-200 rounded-xl p-3 mb-4"><div class="font-semibold text-sm text-gray-900">Delivery or pickup</div><div class="text-xs text-gray-500 mt-0.5">Buyer and seller agree the handover details after purchase.</div></div>
@@ -2495,20 +2484,21 @@ function setSellDelivery(id) {
 
 
 function submitListing() {
+  if (!requireAuth('sell')) return;
   // Persist the new listing to localStorage
   const title = (document.getElementById('s-title')||{value:''}).value || sellCat + ' item';
   const loc   = (document.getElementById('sell-location-input')||{value:'Lusaka'}).value || 'Lusaka';
   const newListing = {
     id: Date.now(),
     title, price: sellPrice, cat: sellCat, cond: sellCondition,
-    loc, store:'My Store', storeId:'s1', identityVerified: true, rating: 5.0,
+    loc, store:getStoreSettings().name, storeId:getUser().uid, sellerId:getUser().uid, identityVerified: false, rating: 0,
     reviews: 0, views: 0, posted:'Just now', origPrice: null,
     desc:'', prev:{low:0,high:0,avg:0},
     images: uploadedImages.map(i=>i.url),
   };
   const saved = getSavedListings();
   saved.push(newListing);
-  localStorage.setItem('pasampo_listings', JSON.stringify(saved));
+  storageSet('pasampo_listings', saved);
   // Update store listing count
   const ss = getStoreSettings(); ss.listingCount = (ss.listingCount||0)+1; saveStoreSettings(ss);
   // Reset upload state
@@ -2519,7 +2509,7 @@ function submitListing() {
       <h2 class="text-2xl font-bold text-gray-900 mb-2">Listing Saved</h2>
       <p class="text-gray-500 mb-5">Your item has been saved to your store.</p>
       <div class="bg-green-50 rounded-2xl p-4 mb-5 text-left space-y-2">
-        <div class="flex items-center gap-2 text-green-700 text-sm">✅ Tier 1 ID checked</div>
+        <div class="flex items-center gap-2 text-gray-600 text-sm">Identity review has not been completed.</div>
         <div class="flex items-center gap-2 text-green-700 text-sm">✅ Listing saved to your store</div>
         <div class="flex items-center gap-2 text-amber-600 text-sm">⏳ Ready for buyer review</div>
       </div>
@@ -2738,10 +2728,10 @@ function renderStore() {
       </div>`;
     return;
   }
-  const storeProducts = PRODUCTS.filter(p => p.storeId === 's1');
+  const storeProducts = getSavedListings();
   const limit = ss.plan === 'premium' ? PREMIUM_LIMIT : FREE_LIMIT;
-  const reviews = REVIEWS['s1'] || [];
-  const avgRating = (reviews.reduce((a,r)=>a+r.rating,0)/reviews.length).toFixed(1);
+  const reviews = [];
+  const avgRating = 'No reviews';
   document.getElementById('store-content').innerHTML = `
     <div data-nav="browse" class="flex items-center gap-2 text-sm text-gray-500 hover:text-[#DC2626] mb-5 cursor-pointer">← Back to listings</div>
 
@@ -2753,20 +2743,20 @@ function renderStore() {
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1 flex-wrap">
             <h1 class="text-2xl font-bold">${ss.name}</h1>
-            <span class="bg-green-500/20 border border-green-400/30 text-green-300 text-xs px-2 py-0.5 rounded-full">✓ Verified</span>
+            <span class="text-gray-300 text-xs">ID review required</span>
             ${ss.plan==='premium'?'<span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:rgba(220,38,38,.3);color:#fcd34d">⭐ Premium</span>':''}
           </div>
           <p class="text-sm mb-1" style="color:${ss.color};font-style:italic">"${ss.catchphrase}"</p>
-          <p class="text-gray-400 text-sm">by Chanda Mwale · Lusaka, Woodlands</p>
+          <p class="text-gray-400 text-sm">Your seller dashboard</p>
           <p class="text-gray-300 text-sm mt-1">${ss.bio}</p>
         </div>
         <button onclick="openStoreEditor()" class="shrink-0 border border-white/20 text-white text-xs px-3 py-2 rounded-xl hover:bg-white/10 transition-colors">✏️ Edit Store</button>
       </div>
       <div class="relative grid grid-cols-4 gap-4 mt-5 pt-5 border-t border-white/10">
         <div class="text-center"><div class="text-xl font-bold" style="color:${ss.color}">${avgRating} ★</div><div class="text-xs text-gray-400">Rating</div><div class="text-[10px] text-gray-500">${reviews.length} reviews</div></div>
-        <div class="text-center"><div class="text-xl font-bold" style="color:${ss.color}">127</div><div class="text-xs text-gray-400">Total Sales</div></div>
+        <div class="text-center"><div class="text-xl font-bold" style="color:${ss.color}">0</div><div class="text-xs text-gray-400">Total Sales</div></div>
         <div class="text-center"><div class="text-xl font-bold" style="color:${ss.color}">${storeProducts.length}/${limit}</div><div class="text-xs text-gray-400">Listings</div></div>
-        <div class="text-center"><div class="text-xl font-bold" style="color:${ss.color}">Jan 2024</div><div class="text-xs text-gray-400">Member Since</div></div>
+        <div class="text-center"><div class="text-xl font-bold" style="color:${ss.color}">${getUser().joinedAt}</div><div class="text-xs text-gray-400">Member Since</div></div>
       </div>
     </div>
 
@@ -2819,20 +2809,13 @@ function reviewCard(r) {
 
 // ─── ADD REVIEW MODAL ────────────────────────────────────────────
 function openAddReview() {
-  document.getElementById('review-modal').classList.add('open');
+  showToast('Reviews will open once completed purchases can be confirmed.', 'info');
 }
 function closeReviewModal() {
   document.getElementById('review-modal').classList.remove('open');
 }
 function submitReview() {
-  const name = document.getElementById('rv-name').value.trim();
-  const text = document.getElementById('rv-text').value.trim();
-  const rating = parseInt(document.getElementById('rv-rating').value);
-  if (!name || !text) { alert('Please fill in your name and review.'); return; }
-  const newReview = { name, avatar: name[0].toUpperCase(), rating, text, date: 'Just now' };
-  REVIEWS['s1'].unshift(newReview);
-  closeReviewModal();
-  document.getElementById('reviews-list').innerHTML = (REVIEWS['s1']).map(r => reviewCard(r)).join('');
+  showToast('Reviews need a confirmed purchase. This is not connected yet.', 'info');
 }
 
 // ─── STORE EDITOR ────────────────────────────────────────────────
@@ -2866,12 +2849,15 @@ function saveStoreEdits() {
 let uploadedImages = [];
 
 function handleImageUpload(e) {
+  const ownerUid = getUser()?.uid;
+  if (!ownerUid) return;
   const files = Array.from(e.target.files);
   const slots = 6 - uploadedImages.length;
   files.slice(0, slots).forEach(file => {
     if (file.size > 5*1024*1024) { showToast('⚠️ ' + file.name + ' is over 5 MB skipped.'); return; }
     const reader = new FileReader();
     reader.onload = ev => {
+      if (getUser()?.uid !== ownerUid) return;
       uploadedImages.push({ name: file.name, url: ev.target.result });
       renderImagePreviews();
     };
@@ -2905,8 +2891,7 @@ function removeImage(i) {
 
 // ─── LOCALSTORAGE HELPERS ─────────────────────────────────────────
 function getSavedListings() {
-  try { return JSON.parse(localStorage.getItem('pasampo_listings') || '[]'); }
-  catch(e) { return []; }
+  return storageGet('pasampo_listings', []).filter(p => p.sellerId === getUser()?.uid);
 }
 
 function getAllProducts() {
@@ -2924,10 +2909,9 @@ const QUICK_MSGS = [
 ];
 
 function getConvos() {
-  try { return JSON.parse(localStorage.getItem('pasampo_convos') || '[]'); }
-  catch(e) { return []; }
+  return storageGet('pasampo_convos', []);
 }
-function saveConvos(c) { localStorage.setItem('pasampo_convos', JSON.stringify(c)); }
+function saveConvos(c) { storageSet('pasampo_convos', c); }
 
 let activeConvoId = null;
 
@@ -3060,6 +3044,8 @@ function msgBubble(m) {
 }
 
 function sendMsg(text, convoId) {
+  const ownerUid = getUser()?.uid;
+  if (!ownerUid) return;
   if (!text?.trim()) return;
   const convos = getConvos();
   const c = convos.find(x=>x.id===convoId);
@@ -3067,6 +3053,7 @@ function sendMsg(text, convoId) {
   c.messages.push({ from:'buyer', text:text.trim(), time:now() });
   // Auto-reply after 1s
   setTimeout(() => {
+    if (getUser()?.uid !== ownerUid) return;
     const replies = [
       'Yes, it\'s still available! When would you like to see it?',
       'The best I can do is K' + Math.round(Math.random()*500+200) + ', firm.',
@@ -3145,6 +3132,42 @@ renderHomeLists = function() {
 };
 
 // ─── INIT ─────────────────────────────────────────────────────────
+window.addEventListener('pasampo-session-change', event => {
+  const { previousUid, uid } = event.detail;
+  if (previousUid !== uid || !uid) {
+    if (previousUid || !uid) pendingAuthAction = null;
+    closeCheckout();
+    closeCartModal();
+    closeStoreEditor();
+    closeReviewModal();
+    closeUpgradeModal();
+    if (previousUid) {
+      closeAuthModal();
+      document.getElementById('auth-body').innerHTML = '';
+    }
+    document.getElementById('co-body').innerHTML = '';
+    document.getElementById('cart-body').innerHTML = '';
+    ['store-content', 'checkout-content', 'admin-content', 'kyc-form', 'sell-form', 'convo-list', 'chat-panel', 'product-content', 'browse-grid'].forEach(id => {
+      document.getElementById(id).innerHTML = '';
+    });
+    ['se-name', 'se-catchphrase', 'se-bio', 'rv-name', 'rv-text'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    coProduct = null;
+    coRecordedOrder = null;
+    coAgreed = false;
+    coBuyerEmail = '';
+    activeConvoId = null;
+    uploadedImages = [];
+    sellStep = 1; sellCat = ''; sellPrice = 0; sellCondition = '';
+    kycStep = 1; kycIdType = null; kycFront = false; kycBack = false; kycSelfie = false; kycAgreed = false;
+    if (previousUid || ['sell', 'verify', 'inbox', 'checkout', 'store', 'admin'].includes(currentPage)) navigate('home');
+    else if (currentPage === 'browse') renderBrowseGrid();
+    else if (currentPage === 'product') renderProduct();
+  }
+  renderAuthBtn();
+  updateCartBadge();
+});
 renderHomeLists();
 renderAuthBtn();
 navigate('home');

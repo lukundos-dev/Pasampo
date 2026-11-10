@@ -1,6 +1,6 @@
 # Pasampo
 
-Pasampo is a prototype for a Zambian verified marketplace where users can browse goods, sign up with Firebase, create listings, verify identity, choose delivery options, and test checkout flows for Airtel Money, MTN Money, and Stripe.
+Pasampo is a Zambian marketplace prototype with Firebase sign-in, account-specific listing and messaging tools, and a simulated Lenco checkout. Identity document review and real payments still require a backend.
 
 ## Prototype
 
@@ -28,9 +28,24 @@ http://localhost:8765/
 - Buyer browsing and product detail pages
 - Seller activation flow and seller-only store dashboard
 - NRC/passport verification prototype
-- Airtel Money, MTN Money, and Stripe checkout options
-- Lusaka map and inbox available after sign-in
+- Simulated checkout awaiting Lenco integration
+- Account-specific cart, listings, store settings, orders and inbox
+- Firebase session changes clear private screens and drafts
 - Static HTML prototype ready for GitHub Pages
+
+## Account Handling
+
+`assets/account-session.js` holds the active Firebase session in memory. A saved browser profile cannot sign someone in. Private prototype data is cached under the Firebase UID. Old shared caches are left untouched and are not imported because their owner cannot be confirmed.
+
+Browser caches are not a permission system or a shared database. Real identity approval, review totals and administrative roles must be verified by a backend. Current accounts cannot award themselves ID approval or a Verified badge. Public sample listings retain illustrative trust data; they are not real approved sellers. Document submission is still a demonstration and must not be used to collect real identity documents.
+
+Run the account regression checks with Node.js:
+
+```bash
+node --test tests/account-session.test.cjs
+```
+
+Firebase provider configuration, authorized domains and email delivery require live account testing separately.
 
 ## Deployment
 
